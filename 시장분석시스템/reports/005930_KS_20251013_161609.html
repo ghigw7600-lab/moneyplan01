@@ -1,0 +1,350 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>005930.KS 투자 분석 보고서</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header .timestamp {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+        .signal-box {
+            background: #ff9800;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        .signal-box .score {
+            font-size: 3em;
+            margin: 10px 0;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        .reason-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .reason-item .category {
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .reason-item .impact {
+            float: right;
+            color: #28a745;
+            font-weight: bold;
+        }
+        .uncertainty-item {
+            background: #fff3cd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+        .uncertainty-item .factor {
+            color: #856404;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .stat-card .value {
+            color: #333;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .disclaimer {
+            background: #fff3cd;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header">
+            <h1>📊 005930.KS 투자 분석 보고서</h1>
+            <div class="timestamp">생성일시: 2025년 10월 13일 16:16</div>
+        </div>
+
+        <!-- 신호 박스 -->
+        <div class="signal-box">
+            <div>➡️ WEAK</div>
+            <div class="score">51.5%</div>
+            <div>신뢰도</div>
+        </div>
+
+        <!-- 콘텐츠 -->
+        <div class="content">
+            <!-- 기업 정보 -->
+            
+            <div class="section">
+                <h2>🏢 기업 정보</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="label">PER</div>
+                        <div class="value">N/A</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">PBR</div>
+                        <div class="value">N/A</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">ROE</div>
+                        <div class="value">N/A</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">배당수익률</div>
+                        <div class="value">N/A</div>
+                    </div>
+                </div>
+            </div>
+        
+
+            <!-- 종합 판단 -->
+            <div class="section">
+                <h2>🎯 종합 판단</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="label">포지션</div>
+                        <div class="value">NEUTRAL</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">신뢰도</div>
+                        <div class="value">51.5%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">리스크</div>
+                        <div class="value">중간</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 신뢰도 근거 -->
+            <div class="section">
+                <h2>📈 신뢰도 근거</h2>
+                
+                <div class="reason-item">
+                    <div class="category">[기술적 지표] RSI</div>
+                    <span class="impact">-15%</span>
+                    <div>RSI 76.4 (과매수)</div>
+                </div>
+            
+                <div class="reason-item">
+                    <div class="category">[기술적 지표] MACD</div>
+                    <span class="impact">+15%</span>
+                    <div>MACD 골든크로스</div>
+                </div>
+            
+                <div class="reason-item">
+                    <div class="category">[기술적 지표] 추세</div>
+                    <span class="impact">+10%</span>
+                    <div>강한 상승 추세 (정배열)</div>
+                </div>
+            
+                <div class="reason-item">
+                    <div class="category">[기술적 지표] RSI</div>
+                    <span class="impact">-15%</span>
+                    <div>RSI 76.4 (과매수 구간)</div>
+                </div>
+            
+                <div class="reason-item">
+                    <div class="category">[기술적 지표] 추세</div>
+                    <span class="impact">+10%</span>
+                    <div>강한 상승 추세 (정배열)</div>
+                </div>
+            
+                <div class="reason-item">
+                    <div class="category">[뉴스 감성] 감성 분석</div>
+                    <span class="impact">0%</span>
+                    <div>뉴스 중립 (총 5개)</div>
+                </div>
+            
+                <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px;">
+                    <strong>합계:</strong> 51.5%
+                </div>
+            </div>
+
+            <!-- 불확실성 요인 -->
+            <div class="section"><h2>⚠️ 불확실성 요인</h2>
+                <div class="uncertainty-item">
+                    <div class="factor">• 저항선 근접</div>
+                    <div>저항선 (94,500) 근처</div>
+                    <div style="margin-top: 8px; color: #856404;">
+                        → 돌파 여부 확인 필요
+                    </div>
+                </div>
+            
+                <div class="uncertainty-item">
+                    <div class="factor">• 고변동성</div>
+                    <div>볼린저밴드 상단 근접 (과열 가능성)</div>
+                    <div style="margin-top: 8px; color: #856404;">
+                        → 급격한 조정 가능성 주의
+                    </div>
+                </div>
+            </div>
+
+            <!-- 기술적 분석 -->
+            
+            <div class="section">
+                <h2>📊 기술적 분석</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="label">RSI</div>
+                        <div class="value">76.4</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">추세</div>
+                        <div class="value" style="font-size: 1em;">강한 상승 추세 (정배열)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">거래량 비율</div>
+                        <div class="value">1.0x</div>
+                    </div>
+                </div>
+            </div>
+        
+
+            <!-- 감성 분석 -->
+            
+            <div class="section">
+                <h2>📰 뉴스 감성 분석</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="label">총 뉴스</div>
+                        <div class="value">5개</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">긍정</div>
+                        <div class="value" style="color: #28a745;">0개</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">부정</div>
+                        <div class="value" style="color: #dc3545;">0개</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">중립</div>
+                        <div class="value" style="color: #ffc107;">5개</div>
+                    </div>
+                </div>
+            </div>
+        
+
+            <!-- 세부 점수 -->
+            <div class="section">
+                <h2>📊 세부 점수 분석</h2>
+                <div class="stats">
+                    
+                <div class="stat-card">
+                    <div class="label">기술적 지표</div>
+                    <div class="value">55.0%</div>
+                </div>
+            
+                <div class="stat-card">
+                    <div class="label">감성 분석</div>
+                    <div class="value">50.0%</div>
+                </div>
+            
+                <div class="stat-card">
+                    <div class="label">거래량</div>
+                    <div class="value">50.0%</div>
+                </div>
+            
+                <div class="stat-card">
+                    <div class="label">지지/저항</div>
+                    <div class="value">45.0%</div>
+                </div>
+            
+                </div>
+            </div>
+
+            <!-- 면책조항 -->
+            <div class="disclaimer">
+                <strong>⚖️ 면책조항</strong><br>
+                이 보고서는 AI 기반 자동 분석이며, 신뢰도 51.5%는 참고용입니다.<br>
+                투자 판단은 본인 책임이며, 손실 가능성이 있습니다.<br>
+                전문가 상담을 권장합니다.
+            </div>
+        </div>
+
+        <!-- 푸터 -->
+        <div class="footer">
+            🤖 Generated with 시장 분석 시스템<br>
+            © 2025 All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

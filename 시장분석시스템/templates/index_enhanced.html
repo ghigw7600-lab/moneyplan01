@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 시장 분석 시스템 - 전문가 버전</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        /* 접었다 펼치기 섹션 스타일 */
+        .collapsible-section {
+            margin-top: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .collapsible-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            user-select: none;
+        }
+
+        .collapsible-header:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+        }
+
+        .collapsible-header h3 {
+            margin: 0;
+            font-size: 1.1em;
+        }
+
+        .collapse-icon {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+
+        .collapsible-header.active .collapse-icon {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+            background: #f8f9fa;
+        }
+
+        .collapsible-content.active {
+            max-height: 2000px;
+        }
+
+        .collapsible-body {
+            padding: 20px;
+        }
+
+        /* 전문용어 툴팁 스타일 */
+        .tooltip-term {
+            position: relative;
+            display: inline-block;
+            border-bottom: 2px dotted #667eea;
+            cursor: help;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .tooltip-box {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            width: 280px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: opacity 0.3s, visibility 0.3s;
+            pointer-events: none;
+            line-height: 1.5;
+        }
+
+        .tooltip-box::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -8px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: #2c3e50 transparent transparent transparent;
+        }
+
+        .tooltip-term:hover .tooltip-box {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* 기존 스타일 유지 */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #667eea;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .search-results.show {
+            display: block;
+        }
+
+        .search-item {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .search-item:hover {
+            background: #f8f9fa;
+        }
+
+        .search-item .name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .search-item .ticker {
+            color: #667eea;
+            font-size: 0.9em;
+        }
+
+        .search-item .market {
+            color: #999;
+            font-size: 0.85em;
+            float: right;
+        }
+
+        #result {
+            margin-top: 30px;
+        }
+
+        .confidence-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .confidence-score {
+            font-size: 3em;
+            font-weight: bold;
+        }
+
+        .signal-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            margin-top: 10px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .detail-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .detail-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .detail-description {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 AI 시장 분석 시스템</h1>
+            <p class="subtitle">실시간 주식/가상화폐 분석 · 전문 지표 상세 설명 · PDF 다운로드</p>
+        </header>
+
+        <div class="main-content">
+            <!-- 왼쪽: 분석 패널 -->
+            <div class="card">
+                <h2>📊 종목 분석</h2>
+
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('stock')">주식</button>
+                    <button class="tab" onclick="switchTab('crypto')">가상화폐</button>
+                </div>
+
+                <!-- 주식 탭 -->
+                <div id="stock-tab" class="tab-content active">
+                    <div class="input-group">
+                        <label>종목 코드 (검색 가능)</label>
+                        <div class="search-container">
+                            <input type="text" id="stock-ticker" placeholder="삼성전자, AAPL 등 검색..." oninput="searchStock(this.value)" autocomplete="off" />
+                            <div id="stock-search-results" class="search-results"></div>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>분석 기간</label>
+                        <select id="stock-period">
+                            <option value="1mo">1개월</option>
+                            <option value="3mo" selected>3개월</option>
+                            <option value="6mo">6개월</option>
+                            <option value="1y">1년</option>
+                        </select>
+                    </div>
+                    <button onclick="analyzeStock()">🔍 분석 시작</button>
+                </div>
+
+                <!-- 가상화폐 탭 -->
+                <div id="crypto-tab" class="tab-content">
+                    <div class="input-group">
+                        <label>코인 ID</label>
+                        <div class="search-container">
+                            <input type="text" id="crypto-ticker"
+                                   placeholder="Bitcoin, Ethereum 등 검색..."
+                                   oninput="searchCrypto(this.value)"
+                                   autocomplete="off" />
+                            <div id="crypto-search-results" class="search-results"></div>
+                        </div>
+                    </div>
+                    <button onclick="analyzeCrypto()">🔍 분석 시작</button>
+                </div>
+            </div>
+
+            <!-- 오른쪽: 결과 패널 -->
+            <div class="card">
+                <h2>📈 분석 결과</h2>
+                <div id="result">
+                    <p style="text-align: center; color: #999; padding: 60px 20px;">
+                        왼쪽에서 종목을 선택하고 분석을 시작하세요
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'stock';
+
+        // 전문용어 사전
+        const termDefinitions = {
+            'RSI': 'Relative Strength Index (상대강도지수): 가격 변동의 강도를 0~100으로 나타낸 지표. 70 이상은 과매수(매도 고려), 30 이하는 과매도(매수 고려) 구간입니다.',
+            'MACD': 'Moving Average Convergence Divergence (이동평균수렴확산): 단기/장기 이동평균선의 차이를 나타내며, MACD선이 시그널선을 상향돌파하면 매수 신호입니다.',
+            '골든크로스': '단기 이동평균선이 장기 이동평균선을 아래에서 위로 돌파하는 현상으로, 상승 추세 전환 신호입니다.',
+            '데드크로스': '단기 이동평균선이 장기 이동평균선을 위에서 아래로 하향 돌파하는 현상으로, 하락 추세 전환 신호입니다.',
+            '볼린저밴드': '주가의 변동성을 측정하는 지표로, 가격이 상단 밴드에 접근하면 과매수, 하단 밴드에 접근하면 과매도 가능성이 있습니다.',
+            '거래량': '특정 기간 동안 거래된 주식 수량. 가격 상승과 함께 거래량이 증가하면 강한 상승 신호입니다.',
+            '지지선': '가격이 하락할 때 지지를 받는 가격대. 이 선을 하향 돌파하면 추가 하락 가능성이 있습니다.',
+            '저항선': '가격이 상승할 때 저항을 받는 가격대. 이 선을 상향 돌파하면 추가 상승 가능성이 있습니다.',
+            '신뢰도': '여러 기술적 지표와 뉴스 감성을 종합하여 계산한 분석 신뢰도. 70% 이상이면 신뢰할 만한 분석입니다.',
+            '감성 분석': '뉴스 기사의 긍정/부정 톤을 AI로 분석하여 시장 심리를 수치화한 지표입니다.',
+            '과매수': '지표상 매수 세력이 과도하여 가격 조정(하락)이 예상되는 상태입니다.',
+            '과매도': '지표상 매도 세력이 과도하여 반등(상승)이 예상되는 상태입니다.',
+            '추세': '일정 기간 동안의 가격 변동 방향. 상승/하락/횡보 추세로 구분됩니다.',
+            '이동평균': '일정 기간의 평균 가격을 연결한 선으로, 추세를 파악하는 기본 지표입니다.'
+        };
+
+        // 용어에 툴팁 적용
+        function addTooltips(text) {
+            let result = text;
+            for (const [term, definition] of Object.entries(termDefinitions)) {
+                const regex = new RegExp(`(${term})`, 'gi');
+                result = result.replace(regex, `<span class="tooltip-term">$1<span class="tooltip-box">${definition}</span></span>`);
+            }
+            return result;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tab + '-tab').classList.add('active');
+        }
+
+        function toggleCollapse(id) {
+            const header = document.getElementById(`header-${id}`);
+            const content = document.getElementById(`content-${id}`);
+            header.classList.toggle('active');
+            content.classList.toggle('active');
+        }
+
+        async function analyzeStock() {
+            let ticker = document.getElementById('stock-ticker').value.trim();
+            const period = document.getElementById('stock-period').value;
+
+            ticker = ticker.split('(')[0].trim();
+            ticker = ticker.split(' ')[0].trim();
+
+            if (!ticker) {
+                alert('종목 코드를 입력하세요');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ticker, type: 'stock', period})
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResult(data);
+                } else {
+                    showError(data.error);
+                }
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function analyzeCrypto() {
+            let ticker = document.getElementById('crypto-ticker').value.trim();
+
+            ticker = ticker.split('(')[0].trim();
+            ticker = ticker.split(' ')[0].trim();
+
+            if (!ticker) {
+                alert('코인 ID를 입력하세요');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ticker, type: 'crypto'})
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResult(data);
+                } else {
+                    showError(data.error);
+                }
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function displayResult(data) {
+            const resultDiv = document.getElementById('result');
+
+            const signalColors = {
+                'strong_buy': '#28a745',
+                'buy': '#5cb85c',
+                'neutral': '#ffc107',
+                'sell': '#dc3545',
+                'strong_sell': '#c82333'
+            };
+
+            const signalNames = {
+                'strong_buy': '강력 매수',
+                'buy': '매수',
+                'neutral': '중립',
+                'sell': '매도',
+                'strong_sell': '강력 매도'
+            };
+
+            window.currentAnalysisData = data;
+
+            let html = `
+                <div class="confidence-box">
+                    <div class="confidence-score">${data.confidence.score}%</div>
+                    <div class="signal-badge" style="background: ${signalColors[data.confidence.signal]}">
+                        ${signalNames[data.confidence.signal]}
+                    </div>
+                    <p style="margin-top: 15px; font-size: 1.2em;">${data.name}</p>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button onclick="downloadPDF()" style="flex: 1; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                        📄 PDF 다운로드
+                    </button>
+                    <button onclick="shareReport()" style="flex: 1; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                        🔗 공유하기
+                    </button>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">현재가</div>
+                        <div class="info-value">${data.current_price.toLocaleString()}원</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">${addTooltips('RSI')}</div>
+                        <div class="info-value">${data.technical.rsi?.toFixed(1) || 'N/A'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">${addTooltips('MACD')}</div>
+                        <div class="info-value">${data.technical.macd?.macd?.toFixed(2) || 'N/A'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">${addTooltips('추세')}</div>
+                        <div class="info-value">${data.technical.trend?.description || 'N/A'}</div>
+                    </div>
+                </div>
+            `;
+
+            // 기술적 분석 세부 내용
+            if (data.technical.rsi || data.technical.macd) {
+                html += `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" id="header-technical" onclick="toggleCollapse('technical')">
+                            <h3>📊 기술적 분석 상세</h3>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content" id="content-technical">
+                            <div class="collapsible-body">
+                                ${data.technical.rsi ? `
+                                    <div class="detail-item">
+                                        <div class="detail-title">${addTooltips('RSI')} (상대강도지수): ${data.technical.rsi.toFixed(1)}</div>
+                                        <div class="detail-description">
+                                            ${data.technical.rsi > 70 ? `<strong style="color: #dc3545;">⚠️ 과매수 구간</strong> - RSI가 70 이상으로 매수세가 과열된 상태입니다. 단기 조정 가능성이 있으므로 신중한 접근이 필요합니다.` :
+                                              data.technical.rsi < 30 ? `<strong style="color: #28a745;">✅ 과매도 구간</strong> - RSI가 30 이하로 매도세가 과열된 상태입니다. 반등 기회를 노릴 수 있는 구간입니다.` :
+                                              `<strong style="color: #ffc107;">➖ 중립 구간</strong> - RSI가 30~70 사이로 정상 범위입니다. 다른 지표와 함께 종합 판단하세요.`}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                ${data.technical.macd ? `
+                                    <div class="detail-item">
+                                        <div class="detail-title">${addTooltips('MACD')}: ${data.technical.macd.macd.toFixed(2)}</div>
+                                        <div class="detail-description">
+                                            <strong>MACD선:</strong> ${data.technical.macd.macd.toFixed(2)}<br>
+                                            <strong>Signal선:</strong> ${data.technical.macd.signal.toFixed(2)}<br>
+                                            <strong>히스토그램:</strong> ${data.technical.macd.histogram.toFixed(2)}<br><br>
+                                            ${data.technical.macd.macd > data.technical.macd.signal ?
+                                                `<strong style="color: #28a745;">✅ ${addTooltips('골든크로스')}</strong> - MACD선이 시그널선 위에 있어 상승 모멘텀이 있습니다.` :
+                                                `<strong style="color: #dc3545;">⚠️ ${addTooltips('데드크로스')}</strong> - MACD선이 시그널선 아래에 있어 하락 압력이 있습니다.`}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                ${data.technical.trend ? `
+                                    <div class="detail-item">
+                                        <div class="detail-title">${addTooltips('추세')} 분석</div>
+                                        <div class="detail-description">
+                                            <strong>현재 추세:</strong> ${data.technical.trend.description}<br>
+                                            ${data.technical.trend.strength ? `<strong>추세 강도:</strong> ${data.technical.trend.strength}<br>` : ''}
+                                            ${addTooltips('이동평균')}을 기준으로 현재 가격이 ${data.technical.trend.description.includes('상승') ? '상승세' : data.technical.trend.description.includes('하락') ? '하락세' : '횡보세'}를 보이고 있습니다.
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 뉴스 감성 분석
+            if (data.sentiment) {
+                html += `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" id="header-sentiment" onclick="toggleCollapse('sentiment')">
+                            <h3>📰 ${addTooltips('감성 분석')} 상세</h3>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content" id="content-sentiment">
+                            <div class="collapsible-body">
+                                <div class="detail-item">
+                                    <div class="detail-title">전체 시장 심리: ${data.sentiment.overall_sentiment === 'positive' ? '긍정 😊' : data.sentiment.overall_sentiment === 'negative' ? '부정 😔' : '중립 😐'}</div>
+                                    <div class="detail-description">
+                                        <strong>감성 점수:</strong> ${(data.sentiment.overall_score * 100).toFixed(1)}점 / 100점<br>
+                                        <strong>긍정 뉴스:</strong> ${data.sentiment.positive_count}개<br>
+                                        <strong>부정 뉴스:</strong> ${data.sentiment.negative_count}개<br>
+                                        <strong>중립 뉴스:</strong> ${data.sentiment.neutral_count || 0}개<br><br>
+                                        최근 ${data.sentiment.positive_count + data.sentiment.negative_count + (data.sentiment.neutral_count || 0)}개의 뉴스를 AI로 분석한 결과,
+                                        ${data.sentiment.overall_sentiment === 'positive' ? '긍정적인 뉴스가 많아 시장 심리가 좋은 편입니다.' :
+                                          data.sentiment.overall_sentiment === 'negative' ? '부정적인 뉴스가 많아 시장 심리가 좋지 않은 편입니다.' :
+                                          '긍정과 부정이 혼재되어 있어 신중한 접근이 필요합니다.'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 신뢰도 세부 분석
+            if (data.confidence.breakdown) {
+                html += `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" id="header-confidence" onclick="toggleCollapse('confidence')">
+                            <h3>📈 ${addTooltips('신뢰도')} 세부 분석</h3>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content" id="content-confidence">
+                            <div class="collapsible-body">
+                                <div class="detail-item">
+                                    <div class="detail-title">신뢰도 계산 방법</div>
+                                    <div class="detail-description">
+                                        <strong>기술적 지표 (40%):</strong> ${data.confidence.breakdown.technical?.toFixed(1) || 'N/A'}점<br>
+                                        - RSI, MACD, ${addTooltips('볼린저밴드')} 등을 종합 평가<br><br>
+
+                                        <strong>${addTooltips('감성 분석')} (30%):</strong> ${data.confidence.breakdown.sentiment?.toFixed(1) || 'N/A'}점<br>
+                                        - 뉴스 기사의 긍정/부정 톤 분석<br><br>
+
+                                        <strong>${addTooltips('거래량')} (20%):</strong> ${data.confidence.breakdown.volume?.toFixed(1) || 'N/A'}점<br>
+                                        - 평균 거래량 대비 현재 거래량 비교<br><br>
+
+                                        <strong>${addTooltips('지지선')}/${addTooltips('저항선')} (10%):</strong> ${data.confidence.breakdown.support_resistance?.toFixed(1) || 'N/A'}점<br>
+                                        - 주요 가격대 돌파 여부 평가
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 투자 근거
+            if (data.confidence.reasons && data.confidence.reasons.length > 0) {
+                html += `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header active" id="header-reasons" onclick="toggleCollapse('reasons')">
+                            <h3>🔍 투자 판단 근거</h3>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content active" id="content-reasons">
+                            <div class="collapsible-body">
+                                ${data.confidence.reasons.map(r => `
+                                    <div class="detail-item">
+                                        <div class="detail-title">${r.category} - ${r.impact}</div>
+                                        <div class="detail-description">${addTooltips(r.reason)}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 불확실성 요인
+            if (data.confidence.uncertainties && data.confidence.uncertainties.length > 0) {
+                html += `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" id="header-uncertainties" onclick="toggleCollapse('uncertainties')">
+                            <h3>⚠️ 리스크 및 불확실성</h3>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content" id="content-uncertainties">
+                            <div class="collapsible-body">
+                                ${data.confidence.uncertainties.map(u => `
+                                    <div class="detail-item" style="border-left-color: #ffc107;">
+                                        <div class="detail-title" style="color: #856404;">${u.factor}</div>
+                                        <div class="detail-description">
+                                            <strong>내용:</strong> ${u.description}<br>
+                                            <strong>권장사항:</strong> ${u.recommendation || '추가 조사 필요'}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            resultDiv.innerHTML = html;
+        }
+
+        function showLoading() {
+            document.getElementById('result').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>AI가 분석 중입니다...</p>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            document.getElementById('result').innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #dc3545;">
+                    <p style="font-size: 1.2em;">❌ 오류 발생</p>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        // 검색 기능
+        let searchTimeout = null;
+
+        async function searchStock(query) {
+            clearTimeout(searchTimeout);
+            const resultsDiv = document.getElementById('stock-search-results');
+
+            if (query.length < 2) {
+                resultsDiv.classList.remove('show');
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=stock`);
+                    const data = await response.json();
+                    displaySearchResults(data.results, resultsDiv, 'stock-ticker');
+                } catch (error) {
+                    console.error('Search error:', error);
+                }
+            }, 300);
+        }
+
+        async function searchCrypto(query) {
+            clearTimeout(searchTimeout);
+            const resultsDiv = document.getElementById('crypto-search-results');
+
+            if (query.length < 2) {
+                resultsDiv.classList.remove('show');
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=crypto`);
+                    const data = await response.json();
+                    displaySearchResults(data.results, resultsDiv, 'crypto-ticker');
+                } catch (error) {
+                    console.error('Search error:', error);
+                }
+            }, 300);
+        }
+
+        function displaySearchResults(results, container, inputId) {
+            if (results.length === 0) {
+                container.classList.remove('show');
+                return;
+            }
+
+            container.innerHTML = results.map(r => `
+                <div class="search-item" onclick="selectTicker('${r.ticker}', '${inputId}')">
+                    <div class="name">${r.name}</div>
+                    <div class="ticker">${r.ticker}</div>
+                    <div class="market">${r.market || r.symbol}</div>
+                </div>
+            `).join('');
+
+            container.classList.add('show');
+        }
+
+        function selectTicker(ticker, inputId) {
+            document.getElementById(inputId).value = ticker;
+            document.querySelectorAll('.search-results').forEach(el => el.classList.remove('show'));
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                document.querySelectorAll('.search-results').forEach(el => el.classList.remove('show'));
+            }
+        });
+
+        async function downloadPDF() {
+            if (!window.currentAnalysisData) {
+                alert('분석 결과가 없습니다');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/download/pdf', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(window.currentAnalysisData)
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `분석보고서_${window.currentAnalysisData.ticker}_${new Date().toISOString().slice(0,10)}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    alert('📄 PDF 다운로드 완료!');
+                } else {
+                    alert('PDF 생성 실패');
+                }
+            } catch (error) {
+                alert('오류 발생: ' + error.message);
+            }
+        }
+
+        function shareReport() {
+            if (!window.currentAnalysisData) {
+                alert('분석 결과가 없습니다');
+                return;
+            }
+
+            const data = window.currentAnalysisData;
+            const signalNames = {
+                'strong_buy': '강력 매수',
+                'buy': '매수',
+                'neutral': '중립',
+                'sell': '매도',
+                'strong_sell': '강력 매도'
+            };
+
+            const shareText = `📊 ${data.name} (${data.ticker}) AI 분석 결과
+
+💰 현재가: ${data.current_price.toLocaleString()}원
+🎯 신뢰도: ${data.confidence.score}%
+📈 투자 신호: ${signalNames[data.confidence.signal]}
+📊 RSI: ${data.technical.rsi?.toFixed(1) || 'N/A'}
+
+🔍 AI 시장 분석 시스템
+생성일: ${new Date().toLocaleDateString('ko-KR')}
+
+⚠️ 본 분석은 참고용이며, 투자 판단은 본인 책임입니다.`;
+
+            navigator.clipboard.writeText(shareText).then(() => {
+                alert('✅ 클립보드에 복사되었습니다!\n\n카카오톡, 이메일 등에 붙여넣기하세요.');
+            }).catch(err => {
+                const textArea = document.createElement('textarea');
+                textArea.value = shareText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('✅ 클립보드에 복사되었습니다!');
+            });
+        }
+    </script>
+</body>
+</html>

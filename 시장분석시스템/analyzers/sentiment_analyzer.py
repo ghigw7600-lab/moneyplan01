@@ -1,0 +1,292 @@
+# -*- coding: utf-8 -*-
+"""
+AI 감성 분석 모듈
+뉴스 제목/내용의 긍정/부정 감성 분석
+"""
+
+import re
+from collections import Counter
+
+
+class SentimentAnalyzer:
+    """감성 분석기 (간단한 키워드 기반)"""
+
+    def __init__(self):
+        # 긍정 키워드
+        self.positive_keywords = [
+            '상승', '급등', '호재', '성장', '증가', '개선', '확대', '돌파', '최고',
+            '강세', '반등', '회복', '긍정', '수혜', '기대', '전망', '투자', '호황',
+            '실적', '이익', '배당', '신고가', '플러스', '상향', '매수', '추천'
+        ]
+
+        # 부정 키워드
+        self.negative_keywords = [
+            '하락', '급락', '악재', '감소', '하향', '악화', '위험', '우려', '부진',
+            '약세', '폭락', '손실', '적자', '부정', '리스크', '하락세', '매도',
+            '경고', '조정', '마이너스', '최저', '부담', '위기', '충격', '우울'
+        ]
+
+        # 중립 키워드
+        self.neutral_keywords = [
+            '보합', '횡보', '관망', '중립', '변동', '예상', '전망', '분석', '평가'
+        ]
+
+    def analyze_text(self, text):
+        """
+        텍스트 감성 분석
+
+        Args:
+            text (str): 분석할 텍스트
+
+        Returns:
+            dict: 감성 점수 및 분류
+        """
+        if not text:
+            return {
+                'score': 0.5,
+                'sentiment': 'neutral',
+                'confidence': 0
+            }
+
+        text = text.lower()
+
+        # 키워드 카운트
+        positive_count = sum(1 for keyword in self.positive_keywords if keyword in text)
+        negative_count = sum(1 for keyword in self.negative_keywords if keyword in text)
+        total_count = positive_count + negative_count
+
+        if total_count == 0:
+            return {
+                'score': 0.5,
+                'sentiment': 'neutral',
+                'confidence': 0,
+                'positive_count': 0,
+                'negative_count': 0
+            }
+
+        # 감성 점수 계산 (0.0 ~ 1.0)
+        score = positive_count / total_count
+
+        # 감성 분류
+        if score >= 0.6:
+            sentiment = 'positive'
+        elif score <= 0.4:
+            sentiment = 'negative'
+        else:
+            sentiment = 'neutral'
+
+        # 신뢰도 (키워드 개수에 비례)
+        confidence = min(total_count / 5.0, 1.0)  # 최대 5개 키워드
+
+        return {
+            'score': score,
+            'sentiment': sentiment,
+            'confidence': confidence,
+            'positive_count': positive_count,
+            'negative_count': negative_count
+        }
+
+    def analyze_news_list(self, news_list):
+        """
+        뉴스 리스트 전체 감성 분석
+
+        Args:
+            news_list (list): 뉴스 딕셔너리 리스트
+
+        Returns:
+            dict: 종합 감성 분석 결과
+        """
+        if not news_list:
+            return {
+                'overall_score': 0.5,
+                'overall_sentiment': 'neutral',
+                'positive_ratio': 0,
+                'negative_ratio': 0,
+                'neutral_ratio': 0,
+                'total_news': 0,
+                'confidence': 0
+            }
+
+        print(f"📰 뉴스 {len(news_list)}개 감성 분석 중...")
+
+        sentiments = []
+        for news in news_list:
+            # 제목과 설명 결합
+            text = f"{news.get('제목', '')} {news.get('설명', '')}"
+            result = self.analyze_text(text)
+            sentiments.append(result)
+
+        # 통계 계산
+        total = len(sentiments)
+        positive = sum(1 for s in sentiments if s['sentiment'] == 'positive')
+        negative = sum(1 for s in sentiments if s['sentiment'] == 'negative')
+        neutral = total - positive - negative
+
+        # 전체 감성 점수 (평균)
+        overall_score = sum(s['score'] for s in sentiments) / total
+        overall_confidence = sum(s['confidence'] for s in sentiments) / total
+
+        # 전체 감성 분류
+        if overall_score >= 0.6:
+            overall_sentiment = 'positive'
+        elif overall_score <= 0.4:
+            overall_sentiment = 'negative'
+        else:
+            overall_sentiment = 'neutral'
+
+        result = {
+            'overall_score': overall_score,
+            'overall_sentiment': overall_sentiment,
+            'positive_ratio': positive / total,
+            'negative_ratio': negative / total,
+            'neutral_ratio': neutral / total,
+            'positive_count': positive,
+            'negative_count': negative,
+            'neutral_count': neutral,
+            'total_news': total,
+            'confidence': overall_confidence,
+            'details': sentiments
+        }
+
+        print(f"✅ 감성 분석 완료: {overall_sentiment} (점수: {overall_score:.2f})")
+        return result
+
+    def get_sentiment_trend(self, news_list, days=7):
+        """
+        시간별 감성 추세 분석
+
+        Args:
+            news_list (list): 날짜 정보가 있는 뉴스 리스트
+            days (int): 분석 기간
+
+        Returns:
+            dict: 일별 감성 추세
+        """
+        from datetime import datetime, timedelta
+        from collections import defaultdict
+
+        daily_sentiments = defaultdict(list)
+
+        for news in news_list:
+            pub_date = news.get('게시일')
+            if not pub_date:
+                continue
+
+            try:
+                # ISO 형식 파싱
+                date = datetime.fromisoformat(pub_date.replace('Z', '+00:00'))
+                day_key = date.strftime('%Y-%m-%d')
+
+                text = f"{news.get('제목', '')} {news.get('설명', '')}"
+                sentiment = self.analyze_text(text)
+                daily_sentiments[day_key].append(sentiment['score'])
+            except:
+                continue
+
+        # 일별 평균 계산
+        trend = {}
+        for day, scores in sorted(daily_sentiments.items()):
+            if scores:
+                trend[day] = {
+                    'score': sum(scores) / len(scores),
+                    'count': len(scores)
+                }
+
+        return trend
+
+
+# 고급 AI 감성 분석 (transformers 사용 - 선택사항)
+class AdvancedSentimentAnalyzer:
+    """
+    Transformer 기반 고급 감성 분석
+    초기 로딩에 시간이 걸리므로 선택적 사용
+    """
+
+    def __init__(self):
+        self.model = None
+        self.tokenizer = None
+        self.loaded = False
+
+    def load_model(self):
+        """모델 로드 (처음 한 번만)"""
+        try:
+            from transformers import AutoTokenizer, AutoModelForSequenceClassification
+            import torch
+
+            print("🤖 AI 감성 분석 모델 로딩 중... (최초 1회, 수 분 소요)")
+
+            model_name = "cardiffnlp/twitter-roberta-base-sentiment"
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+            self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
+
+            self.loaded = True
+            print("✅ AI 모델 로드 완료")
+            return True
+
+        except ImportError:
+            print("⚠️ transformers 라이브러리가 필요합니다: pip install transformers torch")
+            return False
+        except Exception as e:
+            print(f"❌ 모델 로드 실패: {str(e)}")
+            return False
+
+    def analyze_text(self, text):
+        """AI 기반 감성 분석"""
+        if not self.loaded:
+            if not self.load_model():
+                return None
+
+        try:
+            import torch
+
+            inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+            outputs = self.model(**inputs)
+            scores = torch.nn.functional.softmax(outputs.logits, dim=1)
+
+            # 레이블: 0=negative, 1=neutral, 2=positive
+            labels = ['negative', 'neutral', 'positive']
+            scores_dict = {labels[i]: scores[0][i].item() for i in range(3)}
+
+            # 최고 점수 레이블
+            max_label = max(scores_dict, key=scores_dict.get)
+
+            return {
+                'sentiment': max_label,
+                'scores': scores_dict,
+                'confidence': scores_dict[max_label]
+            }
+
+        except Exception as e:
+            print(f"❌ AI 분석 실패: {str(e)}")
+            return None
+
+
+# 테스트 코드
+if __name__ == "__main__":
+    analyzer = SentimentAnalyzer()
+
+    # 테스트 텍스트
+    test_texts = [
+        "삼성전자 주가 급등, 반도체 수출 호조",
+        "증시 폭락, 투자자들 우려 확산",
+        "코스피 보합권에서 등락 반복",
+        "비트코인 신고가 경신, 투자 열기 뜨거워",
+        "암호화폐 시장 급락, 규제 리스크 부각"
+    ]
+
+    print("=== 개별 텍스트 감성 분석 ===")
+    for text in test_texts:
+        result = analyzer.analyze_text(text)
+        print(f"\n텍스트: {text}")
+        print(f"감성: {result['sentiment']} (점수: {result['score']:.2f}, 신뢰도: {result['confidence']:.2f})")
+
+    # 뉴스 리스트 분석
+    print("\n\n=== 뉴스 리스트 종합 분석 ===")
+    news_list = [{'제목': text, '설명': ''} for text in test_texts]
+    overall = analyzer.analyze_news_list(news_list)
+
+    print(f"\n종합 감성: {overall['overall_sentiment']}")
+    print(f"점수: {overall['overall_score']:.2f}")
+    print(f"긍정: {overall['positive_ratio']:.1%}")
+    print(f"부정: {overall['negative_ratio']:.1%}")
+    print(f"중립: {overall['neutral_ratio']:.1%}")
