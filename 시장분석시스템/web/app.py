@@ -41,6 +41,8 @@ from analyzers.ma_cross_analyzer import MovingAverageCrossAnalyzer  # Phase 3-3:
 from analyzers.volume_analyzer import VolumeAnalyzer  # Phase 3-4: 거래량 분석기 추가
 from reports.report_generator import ReportGenerator
 from reports.pdf_generator import PDFReportGenerator
+from reports.premium_pdf_generator import PremiumPDFGenerator  # Phase 3: 프리미엄 PDF 추가
+from reports.share_generator import ShareTextGenerator  # Phase 3: 공유하기 기능 추가
 from auto_recommender import AutoRecommender
 
 app = Flask(__name__,
@@ -57,6 +59,8 @@ google_news_collector = GoogleNewsCollector()  # Phase 2-2: Google News 추가
 sentiment_analyzer = SentimentAnalyzer()
 krx_list = get_krx_list()  # 전체 KRX 종목 리스트
 pdf_generator = PDFReportGenerator()  # PDF 생성기
+premium_pdf_generator = PremiumPDFGenerator()  # 프리미엄 PDF 생성기 (Phase 3)
+share_text_generator = ShareTextGenerator()  # 공유 텍스트 생성기 (Phase 3)
 hot_stock_recommender = AutoRecommender()  # 핫 종목 추천 엔진
 event_collector = EconomicEventCollector()  # 경제 이벤트 수집기 (Phase 2-3)
 
@@ -554,6 +558,59 @@ def download_pdf():
         )
 
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/download/premium-pdf', methods=['POST'])
+def download_premium_pdf():
+    """프리미엄 PDF 다운로드 (Phase 3 - 모든 분석 포함)"""
+    try:
+        data = request.json
+
+        # PDF 저장 디렉토리
+        reports_dir = os.path.join(os.path.dirname(__file__), '../reports')
+        os.makedirs(reports_dir, exist_ok=True)
+
+        # 프리미엄 PDF 생성 (한글 파일명 자동 생성)
+        log_info(f"프리미엄 PDF 생성 시작: {data.get('name', 'unknown')}")
+        output_path = premium_pdf_generator.generate_report(reports_dir, data)
+
+        # 파일명 추출
+        filename = os.path.basename(output_path)
+        log_info(f"프리미엄 PDF 생성 완료: {filename}")
+
+        # 파일 다운로드
+        return send_file(
+            output_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
+
+    except Exception as e:
+        log_error(f"프리미엄 PDF 생성 실패", e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/share', methods=['POST'])
+def generate_share():
+    """공유하기 텍스트 생성 (70% 간소화)"""
+    try:
+        data = request.json
+
+        # 공유 텍스트 생성
+        log_info(f"공유 텍스트 생성 시작: {data.get('name', 'unknown')}")
+        share_text = share_text_generator.generate_share_text(data)
+
+        log_info(f"공유 텍스트 생성 완료")
+
+        return jsonify({
+            'success': True,
+            'share_text': share_text
+        })
+
+    except Exception as e:
+        log_error(f"공유 텍스트 생성 실패", e)
         return jsonify({'error': str(e)}), 500
 
 

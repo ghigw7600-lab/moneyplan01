@@ -882,8 +882,11 @@
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button onclick="downloadPremiumPDF()" style="flex: 1; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);" title="Phase 3 분석 포함 프리미엄 PDF">
+                        ⭐ 프리미엄 PDF
+                    </button>
                     <button onclick="downloadPDF()" style="flex: 1; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                        📄 PDF 다운로드
+                        📄 기본 PDF
                     </button>
                     <button onclick="shareReport()" style="flex: 1; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
                         🔗 공유하기
@@ -1927,44 +1930,89 @@
             }
         }
 
-        function shareReport() {
+        async function downloadPremiumPDF() {
             if (!window.currentAnalysisData) {
                 alert('분석 결과가 없습니다');
                 return;
             }
 
-            const data = window.currentAnalysisData;
-            const signalNames = {
-                'strong_buy': '강력 매수',
-                'buy': '매수',
-                'neutral': '중립',
-                'sell': '매도',
-                'strong_sell': '강력 매도'
-            };
+            try {
+                alert('⭐ 프리미엄 PDF 생성 중...\n\nPhase 3 고급 분석이 포함된\n대기업 스타일 보고서를 생성합니다.\n(10초 소요)');
 
-            const shareText = `📊 ${data.name} (${data.ticker}) AI 분석 결과
+                const response = await fetch('/api/download/premium-pdf', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(window.currentAnalysisData)
+                });
 
-💰 현재가: ${data.current_price.toLocaleString()}원
-🎯 신뢰도: ${data.confidence.score}%
-📈 투자 신호: ${signalNames[data.confidence.signal]}
-📊 RSI: ${data.technical.rsi?.toFixed(1) || 'N/A'}
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    // 서버에서 한글 파일명이 자동 생성되므로, Content-Disposition에서 추출
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = `${window.currentAnalysisData.name}_투자분석보고서.pdf`;
+                    if (contentDisposition) {
+                        const matches = /filename="?([^"]+)"?/.exec(contentDisposition);
+                        if (matches && matches[1]) {
+                            filename = matches[1];
+                        }
+                    }
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
 
-🔍 AI 시장 분석 시스템
-생성일: ${new Date().toLocaleDateString('ko-KR')}
+                    alert('⭐ 프리미엄 PDF 다운로드 완료!\n\n포함 내용:\n- Phase 3 고급 패턴 분석\n- 볼린저 밴드 & RSI 전략\n- 이동평균선 크로스\n- 거래량 분석\n- 트레이딩 전략 추천');
+                } else {
+                    const error = await response.json();
+                    alert('PDF 생성 실패: ' + (error.error || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                alert('오류 발생: ' + error.message);
+            }
+        }
 
-⚠️ 본 분석은 참고용이며, 투자 판단은 본인 책임입니다.`;
+        async function shareReport() {
+            if (!window.currentAnalysisData) {
+                alert('분석 결과가 없습니다');
+                return;
+            }
 
-            navigator.clipboard.writeText(shareText).then(() => {
-                alert('✅ 클립보드에 복사되었습니다!\n\n카카오톡, 이메일 등에 붙여넣기하세요.');
-            }).catch(err => {
-                const textArea = document.createElement('textarea');
-                textArea.value = shareText;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                alert('✅ 클립보드에 복사되었습니다!');
-            });
+            try {
+                // API 호출하여 70% 간소화 공유 텍스트 생성
+                const response = await fetch('/api/share', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(window.currentAnalysisData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const shareText = result.share_text;
+
+                    // 클립보드 복사
+                    navigator.clipboard.writeText(shareText).then(() => {
+                        alert('✅ 클립보드에 복사되었습니다!\n\nPhase 3 분석 포함 (70% 간소화)\n\n카카오톡, 이메일 등에 붙여넣기하세요.');
+                    }).catch(err => {
+                        // 대체 방법
+                        const textArea = document.createElement('textarea');
+                        textArea.value = shareText;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        alert('✅ 클립보드에 복사되었습니다!');
+                    });
+                } else {
+                    const error = await response.json();
+                    alert('공유 텍스트 생성 실패: ' + (error.error || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                alert('오류 발생: ' + error.message);
+            }
         }
 
         // 원자재 기능
