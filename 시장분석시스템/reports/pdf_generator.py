@@ -144,36 +144,71 @@ class PDFReportGenerator:
         story.append(signal_table)
         story.append(Spacer(1, 0.3*inch))
 
-        # 4. 기술적 지표
+        # 4. 기술적 지표 (상세 버전)
         technical = analysis_data.get('technical', {})
-        story.append(Paragraph("기술적 지표", heading_style))
+        story.append(Paragraph("기술적 지표 (상세)", heading_style))
+
+        # 기본 지표
+        macd_data = technical.get('macd', {})
+        current_price = analysis_data.get('current_price', 0)
 
         technical_data = [
-            ['지표', '값'],
-            ['RSI', f"{technical.get('rsi', 0):.1f}"],
-            ['MACD', f"{technical.get('macd', {}).get('macd', 0):.2f}"],
-            ['Signal', f"{technical.get('macd', {}).get('signal', 0):.2f}"],
-            ['추세', technical.get('trend', {}).get('description', 'N/A')],
+            ['지표', '값', '해석'],
+            ['RSI (14일)', f"{technical.get('rsi', 0):.2f}", self._interpret_rsi(technical.get('rsi', 50))],
+            ['MACD', f"{macd_data.get('macd', 0):.4f}", self._interpret_macd(macd_data.get('macd', 0), macd_data.get('signal', 0))],
+            ['MACD Signal', f"{macd_data.get('signal', 0):.4f}", '시그널선'],
+            ['MACD Histogram', f"{macd_data.get('histogram', 0):.4f}", self._interpret_macd_histogram(macd_data.get('histogram', 0))],
         ]
 
-        technical_table = Table(technical_data, colWidths=[2*inch, 4*inch])
+        # 이동평균선 추가
+        ma_data = technical.get('ma', {})
+        if ma_data:
+            ma5 = ma_data.get('ma5', 0)
+            ma20 = ma_data.get('ma20', 0)
+            ma60 = ma_data.get('ma60', 0)
+            ma120 = ma_data.get('ma120', 0)
+
+            technical_data.append(['이동평균 5일', f"{ma5:.2f}", self._interpret_ma(current_price, ma5, '5일')])
+            technical_data.append(['이동평균 20일', f"{ma20:.2f}", self._interpret_ma(current_price, ma20, '20일')])
+            technical_data.append(['이동평균 60일', f"{ma60:.2f}", self._interpret_ma(current_price, ma60, '60일')])
+            technical_data.append(['이동평균 120일', f"{ma120:.2f}", self._interpret_ma(current_price, ma120, '120일')])
+
+        # 볼린저 밴드 추가
+        bollinger = technical.get('bollinger', {})
+        if bollinger:
+            upper = bollinger.get('upper', 0)
+            middle = bollinger.get('middle', 0)
+            lower = bollinger.get('lower', 0)
+
+            technical_data.append(['볼린저 상단', f"{upper:.2f}", self._interpret_bollinger(current_price, upper, middle, lower, 'upper')])
+            technical_data.append(['볼린저 중단', f"{middle:.2f}", '중심선 (20일 이평)'])
+            technical_data.append(['볼린저 하단', f"{lower:.2f}", self._interpret_bollinger(current_price, upper, middle, lower, 'lower')])
+
+        # 추세
+        trend = technical.get('trend', {})
+        if trend:
+            technical_data.append(['추세', trend.get('description', 'N/A'), self._interpret_trend(trend.get('description', ''))])
+            technical_data.append(['추세 강도', f"{trend.get('strength', 0):.1f}%", self._interpret_trend_strength(trend.get('strength', 0))])
+
+        technical_table = Table(technical_data, colWidths=[2*inch, 2*inch, 2*inch])
         technical_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#667eea')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (-1, -1), self.korean_font),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ]))
         story.append(technical_table)
         story.append(Spacer(1, 0.3*inch))
 
-        # 5. 뉴스 감성 분석
+        # 5. 뉴스 감성 분석 (요약)
         sentiment = analysis_data.get('sentiment', {})
         if sentiment:
-            story.append(Paragraph("뉴스 감성 분석", heading_style))
+            story.append(Paragraph("뉴스 감성 분석 (요약)", heading_style))
 
             sentiment_names = {
                 'positive': '긍정',
@@ -202,46 +237,86 @@ class PDFReportGenerator:
             story.append(sentiment_table)
             story.append(Spacer(1, 0.3*inch))
 
-        # 6. 주요 근거
+        # 5-2. 뉴스 상세 내역 (전체)
+        news_list = analysis_data.get('news', [])
+        if news_list:
+            story.append(Paragraph("뉴스 상세 내역 - 전체", heading_style))
+
+            news_data = [['번호', '제목', '언론사', '날짜', '감성', 'URL']]
+            for i, news in enumerate(news_list, 1):
+                # 감성 표시
+                sentiment_text = sentiment_names.get(news.get('sentiment', 'neutral'), '중립')
+
+                # URL을 클릭 가능한 형태로 (PDF에서는 텍스트만 표시)
+                url = news.get('url', 'N/A')
+                url_short = url[:40] + '...' if len(url) > 40 else url
+
+                news_data.append([
+                    str(i),
+                    news.get('제목', 'N/A'),
+                    news.get('언론사', 'N/A'),
+                    news.get('날짜', 'N/A').strftime('%Y-%m-%d') if hasattr(news.get('날짜'), 'strftime') else str(news.get('날짜', 'N/A')),
+                    sentiment_text,
+                    url_short
+                ])
+
+            news_table = Table(news_data, colWidths=[0.3*inch, 2.2*inch, 0.8*inch, 0.8*inch, 0.5*inch, 1.4*inch])
+            news_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#667eea')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, -1), self.korean_font),
+                ('FONTSIZE', (0, 0), (-1, -1), 7),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            story.append(news_table)
+            story.append(Spacer(1, 0.3*inch))
+
+        # 6. AI 종합 투자의견 - 전체 근거 (제한 없음)
         reasons = confidence.get('reasons', [])
         if reasons:
-            story.append(Paragraph("주요 근거", heading_style))
+            story.append(Paragraph("AI 종합 투자의견 - 전체 근거", heading_style))
 
-            reasons_data = [['카테고리', '근거', '영향도']]
-            for r in reasons[:10]:  # 최대 10개
+            reasons_data = [['순위', '카테고리', '근거', '영향도']]
+            for i, r in enumerate(reasons, 1):  # 전체 다 포함
                 reasons_data.append([
+                    f"#{i}",
                     r.get('category', ''),
                     r.get('reason', ''),
                     r.get('impact', '')
                 ])
 
-            reasons_table = Table(reasons_data, colWidths=[1.5*inch, 3*inch, 1.5*inch])
+            reasons_table = Table(reasons_data, colWidths=[0.5*inch, 1.5*inch, 2.8*inch, 1.2*inch])
             reasons_table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#667eea')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                 ('FONTNAME', (0, 0), (-1, -1), self.korean_font),
-                ('FONTSIZE', (0, 0), (-1, -1), 9),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                ('TOPPADDING', (0, 0), (-1, -1), 5),
                 ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ]))
             story.append(reasons_table)
             story.append(Spacer(1, 0.3*inch))
 
-        # 7. 불확실성 요인
+        # 7. 불확실성 요인 - 전체 (제한 없음)
         uncertainties = confidence.get('uncertainties', [])
         if uncertainties:
-            story.append(Paragraph("불확실성 요인", heading_style))
+            story.append(Paragraph("불확실성 요인 - 전체", heading_style))
 
             uncertainty_text = []
-            for u in uncertainties[:5]:  # 최대 5개
-                uncertainty_text.append(f"• {u.get('factor', '')}: {u.get('description', '')}")
+            for i, u in enumerate(uncertainties, 1):  # 전체 다 포함
+                uncertainty_text.append(f"{i}. {u.get('factor', '')}: {u.get('description', '')}")
 
             for text in uncertainty_text:
                 story.append(Paragraph(text, body_style))
-            story.append(Spacer(1, 0.3*inch))
+                story.append(Spacer(1, 0.1*inch))
+            story.append(Spacer(1, 0.2*inch))
 
         # 8. 면책조항
         story.append(PageBreak())
@@ -263,9 +338,99 @@ class PDFReportGenerator:
 
         # PDF 생성
         doc.build(story)
-        print(f"✅ PDF 생성 완료: {output_path}")
+        print(f"PDF 생성 완료: {output_path}")
 
         return output_path
+
+    def _interpret_rsi(self, rsi):
+        """RSI 값 해석"""
+        if rsi < 30:
+            return "과매도 (매수 고려)"
+        elif rsi < 40:
+            return "약세 (관망)"
+        elif rsi < 60:
+            return "중립 (정상)"
+        elif rsi < 70:
+            return "강세 (주의)"
+        else:
+            return "과매수 (매도 고려)"
+
+    def _interpret_macd_histogram(self, histogram):
+        """MACD 히스토그램 해석"""
+        if histogram > 0.5:
+            return "강한 상승세"
+        elif histogram > 0:
+            return "약한 상승세"
+        elif histogram > -0.5:
+            return "약한 하락세"
+        else:
+            return "강한 하락세"
+
+    def _interpret_macd(self, macd, signal):
+        """MACD와 시그널 비교 해석"""
+        if macd > signal:
+            return "골든크로스 (상승 신호)"
+        elif macd < signal:
+            return "데드크로스 (하락 신호)"
+        else:
+            return "중립"
+
+    def _interpret_ma(self, current_price, ma_value, period):
+        """이동평균선 해석"""
+        if ma_value == 0:
+            return "데이터 없음"
+
+        diff_pct = ((current_price - ma_value) / ma_value) * 100
+
+        if diff_pct > 5:
+            return f"{period} 이평 위 {diff_pct:.1f}% (강세)"
+        elif diff_pct > 0:
+            return f"{period} 이평 위 {diff_pct:.1f}% (약세)"
+        elif diff_pct > -5:
+            return f"{period} 이평 아래 {abs(diff_pct):.1f}% (약약)"
+        else:
+            return f"{period} 이평 아래 {abs(diff_pct):.1f}% (약세)"
+
+    def _interpret_bollinger(self, current_price, upper, middle, lower, position):
+        """볼린저 밴드 해석"""
+        if upper == 0 or lower == 0:
+            return "데이터 없음"
+
+        if position == 'upper':
+            if current_price >= upper:
+                return "가격이 상단 밴드 돌파 (과매수)"
+            else:
+                diff_pct = ((upper - current_price) / current_price) * 100
+                return f"상단까지 {diff_pct:.1f}% 여유"
+
+        elif position == 'lower':
+            if current_price <= lower:
+                return "가격이 하단 밴드 이탈 (과매도)"
+            else:
+                diff_pct = ((current_price - lower) / current_price) * 100
+                return f"하단까지 {diff_pct:.1f}% 여유"
+
+        return "중립"
+
+    def _interpret_trend(self, description):
+        """추세 해석"""
+        if '상승' in description:
+            return "매수 기회 고려"
+        elif '하락' in description:
+            return "매도 또는 관망"
+        else:
+            return "횡보 중 (방향성 불명확)"
+
+    def _interpret_trend_strength(self, strength):
+        """추세 강도 해석"""
+        if strength > 10:
+            return "매우 강한 추세"
+        elif strength > 5:
+            return "강한 추세"
+        elif strength > 2:
+            return "보통 추세"
+        else:
+            return "약한 추세 (횡보 가능성)"
 
 
 if __name__ == "__main__":

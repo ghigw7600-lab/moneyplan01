@@ -3,6 +3,15 @@
 KRX 전체 상장 종목 리스트 수집
 코스피 + 코스닥 전체 종목 검색 가능
 """
+import sys
+import io
+
+# Windows 한글 출력 문제 해결 (__main__일 때만)
+if __name__ == "__main__" and hasattr(sys.stdout, 'buffer'):
+    try:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    except ValueError:
+        pass
 
 import pandas as pd
 import requests

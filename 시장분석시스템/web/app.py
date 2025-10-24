@@ -19,17 +19,29 @@ import threading
 # 상위 디렉토리 경로 추가
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# 유틸리티 임포트 (근본 문제 해결 시스템)
+from utils.data_normalizer import normalize_dataframe, validate_dataframe
+from utils.logger import log_error, log_warning, log_info, log_dataframe_error
+
 from collectors.stock_collector import StockCollector
 from collectors.crypto_collector import CryptoCollector
+from collectors.commodity_collector import CommodityCollector
 from collectors.naver_news_collector import NaverNewsCollector
+from collectors.google_news_collector import GoogleNewsCollector
 from collectors.krx_stock_list import get_krx_list
 from collectors.multi_source_collector import MultiSourceCollector
+from collectors.economic_event_collector import EconomicEventCollector
 from analyzers.technical_analyzer import TechnicalAnalyzer
 from analyzers.sentiment_analyzer import SentimentAnalyzer
 from analyzers.confidence_calculator import ConfidenceCalculator
 from analyzers.comprehensive_analyzer import ComprehensiveAnalyzer
+from analyzers.pattern_analyzer import PatternAnalyzer  # Phase 3-1: 패턴 분석기 추가
+from analyzers.bollinger_rsi_analyzer import BollingerRSIAnalyzer  # Phase 3-2: 볼린저 밴드 & RSI 분석기 추가
+from analyzers.ma_cross_analyzer import MovingAverageCrossAnalyzer  # Phase 3-3: 이동평균선 크로스 분석기 추가
+from analyzers.volume_analyzer import VolumeAnalyzer  # Phase 3-4: 거래량 분석기 추가
 from reports.report_generator import ReportGenerator
 from reports.pdf_generator import PDFReportGenerator
+from auto_recommender import AutoRecommender
 
 app = Flask(__name__,
             template_folder='../templates',
@@ -39,10 +51,14 @@ app = Flask(__name__,
 stock_collector = StockCollector()
 multi_collector = MultiSourceCollector()  # 다중 소스 수집기 추가
 crypto_collector = CryptoCollector()
+commodity_collector = CommodityCollector()  # 원자재 수집기 추가
 news_collector = NaverNewsCollector()
+google_news_collector = GoogleNewsCollector()  # Phase 2-2: Google News 추가
 sentiment_analyzer = SentimentAnalyzer()
 krx_list = get_krx_list()  # 전체 KRX 종목 리스트
 pdf_generator = PDFReportGenerator()  # PDF 생성기
+hot_stock_recommender = AutoRecommender()  # 핫 종목 추천 엔진
+event_collector = EconomicEventCollector()  # 경제 이벤트 수집기 (Phase 2-3)
 
 # 24시간 모니터링 상태
 monitoring_active = False
@@ -70,9 +86,39 @@ def analyze():
 
         # 데이터 수집
         if asset_type == 'crypto':
+            # 한글 암호화폐 이름 매핑
+            crypto_kr_mapping = {
+                '비트코인': 'bitcoin',
+                '이더리움': 'ethereum',
+                '이더': 'ethereum',
+                '리플': 'ripple',
+                '에이다': 'cardano',
+                '카르다노': 'cardano',
+                '솔라나': 'solana',
+                '오덜리': 'orderly-network',
+                '오더리': 'orderly-network',
+                'orderly': 'orderly-network',
+                'order': 'orderly-network',
+                '바이낸스': 'binancecoin',
+                '도지': 'dogecoin',
+                '도지코인': 'dogecoin',
+                '폴카닷': 'polkadot',
+                '체인링크': 'chainlink',
+                '아발란체': 'avalanche-2',
+            }
+
+            # 한글 입력 시 자동 변환
+            ticker_lower = ticker.lower()
+            if ticker in crypto_kr_mapping:
+                ticker = crypto_kr_mapping[ticker]
+                print(f"🔄 한글 코인명 변환: {data.get('ticker')} → {ticker}")
+            elif ticker_lower in crypto_kr_mapping:
+                ticker = crypto_kr_mapping[ticker_lower]
+                print(f"🔄 한글 코인명 변환: {data.get('ticker')} → {ticker}")
+
             price_data = crypto_collector.get_crypto_data(ticker, days=90)
             coin_info = crypto_collector.get_coin_info(ticker)
-            name = coin_info.get('name', ticker)
+            name = coin_info.get('코인명', ticker) if coin_info else ticker
             error_msg = None
         else:
             # 한국 주식 확인
@@ -97,17 +143,48 @@ def analyze():
 
         # 에러 처리
         if price_data is None or (hasattr(price_data, 'empty') and price_data.empty):
+            log_error(f"데이터 수집 실패: {ticker} ({asset_type})")
+            if error_msg:
+                log_dataframe_error(price_data, f"Empty data for {ticker}")
             if error_msg:
                 return jsonify({'error': error_msg}), 404
             else:
                 return jsonify({'error': '데이터를 가져올 수 없습니다.\n\n종목코드를 확인하세요:\n- 미국 주식: AAPL, MSFT, INTC\n- 한국 주식: 005930.KS, 035720.KQ'}), 404
 
+        # ✨ 컬럼명 자동 정규화 (통합 시스템)
+        log_info(f"데이터 정규화 시작: {ticker}")
+        price_data = normalize_dataframe(price_data)
+
+        # 검증
+        is_valid, missing = validate_dataframe(price_data)
+        if not is_valid:
+            log_warning(f"데이터 검증 실패: {ticker}, 누락 컬럼: {missing}")
+            return jsonify({'error': f'데이터 형식 오류: 누락된 컬럼 {missing}'}), 500
+
         # 기술적 분석
         tech_analyzer = TechnicalAnalyzer(price_data)
         technical_result = tech_analyzer.analyze_all()
 
-        # 뉴스 수집 및 감성 분석
-        news_list = news_collector.get_news(name, max_count=20)
+        # Phase 3-1: 고급 패턴 분석
+        pattern_analyzer = PatternAnalyzer()
+        pattern_result = pattern_analyzer.analyze_patterns(price_data)
+
+        # Phase 3-2: 볼린저 밴드 & RSI 전략 분석
+        bb_rsi_analyzer = BollingerRSIAnalyzer()
+        bb_rsi_result = bb_rsi_analyzer.analyze(price_data)
+
+        # Phase 3-3: 이동평균선 크로스 전략 분석
+        ma_cross_analyzer = MovingAverageCrossAnalyzer()
+        ma_cross_result = ma_cross_analyzer.analyze(price_data)
+
+        # Phase 3-4: 거래량 분석
+        volume_analyzer = VolumeAnalyzer()
+        volume_result = volume_analyzer.analyze(price_data)
+
+        # 뉴스 수집 및 감성 분석 (Phase 2-2: 다중 소스)
+        naver_news = news_collector.get_news(name, max_count=10)
+        google_news = google_news_collector.get_news(name, max_count=10, language='ko')
+        news_list = naver_news + google_news  # 통합
         sentiment_result = sentiment_analyzer.analyze_news_list(news_list)
 
         # 신뢰도 계산
@@ -124,16 +201,13 @@ def analyze():
         }
         comprehensive_result = comprehensive_analyzer.generate_opinion(comprehensive_data)
 
-        # 현재가 (컬럼명 호환성 처리)
-        if '종가' in price_data.columns:
-            current_price = price_data['종가'].iloc[-1]
-            close_col = '종가'
-            volume_col = '거래량'
-        elif 'Close' in price_data.columns:
+        # 현재가 (컬럼명 표준화 후에는 항상 영문)
+        if 'Close' in price_data.columns:
             current_price = price_data['Close'].iloc[-1]
             close_col = 'Close'
             volume_col = 'Volume'
         else:
+            # fallback: 만약 표준화가 실패한 경우
             current_price = price_data.iloc[-1, 3]  # 4번째 컬럼 (보통 종가)
             close_col = price_data.columns[3]
             volume_col = price_data.columns[4] if len(price_data.columns) > 4 else price_data.columns[3]
@@ -176,6 +250,10 @@ def analyze():
                 'signals': technical_result.get('signals', [])
             },
             'sentiment': sentiment_result,
+            'patterns': pattern_result,  # Phase 3-1: 패턴 분석 결과 추가
+            'bollinger_rsi': bb_rsi_result,  # Phase 3-2: 볼린저 밴드 & RSI 분석 결과 추가
+            'ma_cross': ma_cross_result,  # Phase 3-3: 이동평균선 크로스 분석 결과 추가
+            'volume': volume_result,  # Phase 3-4: 거래량 분석 결과 추가
             'comprehensive_opinion': comprehensive_result.get('comprehensive_opinion'),
             'news': news_list[:10],  # 상위 10개 뉴스만
             'chart_data': {
@@ -414,30 +492,34 @@ def search_ticker():
                     })
 
         elif asset_type == 'crypto':
-            # 주요 가상화폐 리스트
+            # 주요 가상화폐 리스트 (한글명 포함)
             cryptos = [
-                {'id': 'bitcoin', 'name': 'Bitcoin', 'symbol': 'BTC'},
-                {'id': 'ethereum', 'name': 'Ethereum', 'symbol': 'ETH'},
-                {'id': 'binancecoin', 'name': 'Binance Coin', 'symbol': 'BNB'},
-                {'id': 'ripple', 'name': 'XRP', 'symbol': 'XRP'},
-                {'id': 'cardano', 'name': 'Cardano', 'symbol': 'ADA'},
-                {'id': 'solana', 'name': 'Solana', 'symbol': 'SOL'},
-                {'id': 'polkadot', 'name': 'Polkadot', 'symbol': 'DOT'},
-                {'id': 'dogecoin', 'name': 'Dogecoin', 'symbol': 'DOGE'},
-                {'id': 'avalanche-2', 'name': 'Avalanche', 'symbol': 'AVAX'},
-                {'id': 'chainlink', 'name': 'Chainlink', 'symbol': 'LINK'},
+                {'id': 'bitcoin', 'name': 'Bitcoin', 'name_kr': '비트코인', 'symbol': 'BTC'},
+                {'id': 'ethereum', 'name': 'Ethereum', 'name_kr': '이더리움', 'symbol': 'ETH'},
+                {'id': 'binancecoin', 'name': 'Binance Coin', 'name_kr': '바이낸스', 'symbol': 'BNB'},
+                {'id': 'ripple', 'name': 'XRP', 'name_kr': '리플', 'symbol': 'XRP'},
+                {'id': 'cardano', 'name': 'Cardano', 'name_kr': '카르다노', 'symbol': 'ADA'},
+                {'id': 'solana', 'name': 'Solana', 'name_kr': '솔라나', 'symbol': 'SOL'},
+                {'id': 'polkadot', 'name': 'Polkadot', 'name_kr': '폴카닷', 'symbol': 'DOT'},
+                {'id': 'dogecoin', 'name': 'Dogecoin', 'name_kr': '도지코인', 'symbol': 'DOGE'},
+                {'id': 'avalanche-2', 'name': 'Avalanche', 'name_kr': '아발란체', 'symbol': 'AVAX'},
+                {'id': 'chainlink', 'name': 'Chainlink', 'name_kr': '체인링크', 'symbol': 'LINK'},
+                {'id': 'orderly-network', 'name': 'Orderly', 'name_kr': '오덜리', 'symbol': 'ORDER'},
             ]
 
             query_lower = query.lower()
             for crypto in cryptos:
+                # 영문 + 한글 검색 지원
                 if (query_lower in crypto['id'].lower() or
                     query_lower in crypto['name'].lower() or
-                    query_lower in crypto['symbol'].lower()):
+                    query_lower in crypto['symbol'].lower() or
+                    query_lower in crypto.get('name_kr', '').lower() or
+                    query in crypto.get('name_kr', '')):
                     results.append({
                         'ticker': crypto['id'],
                         'name': crypto['name'],
                         'symbol': crypto['symbol'],
-                        'display': f"{crypto['name']} ({crypto['symbol']}) - {crypto['id']}"
+                        'display': f"{crypto['name']} ({crypto['symbol']}) - {crypto.get('name_kr', '')}"
                     })
 
         return jsonify({'results': results[:10]})  # 최대 10개
@@ -475,6 +557,195 @@ def download_pdf():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/commodities', methods=['GET'])
+def get_commodities():
+    """원자재 데이터 조회"""
+    try:
+        commodity_type = request.args.get('type', 'major')  # major or all
+        period = request.args.get('period', '1mo')
+
+        if commodity_type == 'all':
+            data = commodity_collector.get_all_commodities(period=period)
+        else:
+            data = commodity_collector.get_major_commodities(period=period)
+
+        # 비교 분석도 함께 반환
+        comparison = commodity_collector.compare_commodities(period=period)
+
+        return jsonify({
+            'data': data,
+            'comparison': comparison,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/commodities/<commodity_key>', methods=['GET'])
+def get_commodity_detail(commodity_key):
+    """특정 원자재 상세 정보"""
+    try:
+        period = request.args.get('period', '3mo')
+        data = commodity_collector.get_commodity_data(commodity_key, period=period)
+
+        if data is None:
+            return jsonify({'error': '원자재 데이터를 가져올 수 없습니다'}), 404
+
+        return jsonify(data)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/hot-stocks', methods=['GET'])
+def get_hot_stocks():
+    """핫 종목 목록 조회 (캐시 활용)"""
+    try:
+        # 캐시 파일 경로
+        cache_dir = os.path.join(os.path.dirname(__file__), '../cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_file = os.path.join(cache_dir, 'hot_stocks.json')
+
+        # 캐시 확인 (30분 유효)
+        if os.path.exists(cache_file):
+            import time
+            mtime = os.path.getmtime(cache_file)
+            if time.time() - mtime < 1800:  # 30분 = 1800초
+                print("📌 캐시 파일 사용 중")
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    cached_data = json.load(f)
+                    return jsonify(cached_data)
+
+        print("📌 새로운 스캔 시작")
+        # 캐시가 없거나 만료됨 - 새로 스캔
+        recommendations = hot_stock_recommender.scan_korean_stocks()
+        print(f"📌 스캔 완료: {len(recommendations)}개 종목")
+
+        # JSON 직렬화 가능하도록 변환
+        for rec in recommendations:
+            print(f"📌 처리 중: {rec.get('name')}")
+            # datetime 변환
+            if 'scan_time' in rec:
+                if hasattr(rec['scan_time'], 'isoformat'):
+                    rec['scan_time'] = rec['scan_time'].isoformat()
+                elif isinstance(rec['scan_time'], str):
+                    pass  # 이미 문자열
+                else:
+                    rec['scan_time'] = str(rec['scan_time'])
+
+            # float 변환 (Pandas/Numpy 타입 처리)
+            for key in ['current_price', 'confidence', 'rsi', 'hot_score']:
+                if key in rec and rec[key] is not None:
+                    rec[key] = float(rec[key])
+
+        print("📌 JSON 직렬화 준비 완료")
+        result = {
+            'recommendations': recommendations,
+            'scan_time': datetime.now().isoformat(),
+            'count': len(recommendations)
+        }
+
+        print("📌 캐시 파일 저장 중")
+        # 캐시 저장
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+
+        print("📌 응답 반환")
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ 핫 종목 API 에러:")
+        print(error_trace)
+        return jsonify({'error': str(e), 'traceback': error_trace}), 500
+
+
+@app.route('/api/hot-stocks/scan', methods=['POST'])
+def scan_hot_stocks():
+    """핫 종목 수동 스캔 (캐시 무시)"""
+    try:
+        recommendations = hot_stock_recommender.scan_korean_stocks()
+
+        # JSON 직렬화 가능하도록 datetime 변환
+        for rec in recommendations:
+            if 'scan_time' in rec and hasattr(rec['scan_time'], 'isoformat'):
+                rec['scan_time'] = rec['scan_time'].isoformat()
+
+        result = {
+            'recommendations': recommendations,
+            'scan_time': datetime.now().isoformat(),
+            'count': len(recommendations)
+        }
+
+        # 캐시 업데이트
+        cache_dir = os.path.join(os.path.dirname(__file__), '../cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_file = os.path.join(cache_dir, 'hot_stocks.json')
+
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/economic-events', methods=['GET'])
+def get_economic_events():
+    """경제 이벤트 캘린더 조회 (Phase 2-3)"""
+    try:
+        days = int(request.args.get('days', 30))  # 기본 30일
+        stock_ticker = request.args.get('ticker', None)  # 특정 종목 필터링 (선택)
+        stock_name = request.args.get('name', None)
+
+        # 전체 이벤트 조회
+        all_events = event_collector.get_upcoming_events(days=days)
+
+        # 종목별 필터링 (옵션)
+        if stock_ticker and stock_name:
+            filtered_events = event_collector.filter_events_by_stock(
+                all_events, stock_name, stock_ticker
+            )
+            # 영향도 점수 추가
+            for event in filtered_events:
+                event['impact_score'] = event_collector.get_event_impact_score(event)
+
+            result = {
+                'events': filtered_events,
+                'count': len(filtered_events),
+                'stock_ticker': stock_ticker,
+                'stock_name': stock_name,
+                'period_days': days,
+                'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+        else:
+            # 전체 이벤트 반환
+            for event in all_events:
+                event['impact_score'] = event_collector.get_event_impact_score(event)
+
+            # 중요도 순으로 정렬
+            all_events.sort(key=lambda e: e['impact_score'], reverse=True)
+
+            result = {
+                'events': all_events,
+                'count': len(all_events),
+                'period_days': days,
+                'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ 경제 이벤트 API 에러:")
+        print(error_trace)
+        return jsonify({'error': str(e), 'traceback': error_trace}), 500
+
+
 def monitoring_loop():
     """백그라운드 모니터링 루프"""
     import time
@@ -499,7 +770,7 @@ if __name__ == '__main__':
     print("🚀 시장 분석 시스템 웹 대시보드 시작")
     print("="*60)
     print("\n📊 웹 브라우저에서 접속하세요:")
-    print("   http://localhost:5001")
+    print("   http://localhost:5003")
     print("\n종료하려면 Ctrl+C를 누르세요\n")
 
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=True, host='0.0.0.0', port=5003)

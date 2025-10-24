@@ -373,11 +373,197 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* 원자재 모달 스타일 */
+        .commodity-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            overflow-y: auto;
+        }
+
+        .commodity-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .commodity-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 1000px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .commodity-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .commodity-close:hover {
+            color: #333;
+        }
+
+        .commodity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .commodity-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .commodity-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .commodity-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .commodity-price {
+            font-size: 1.5em;
+            margin: 10px 0;
+        }
+
+        .commodity-change {
+            font-size: 0.9em;
+        }
+
+        /* 핫 종목 스타일 - 원자재와 동일한 모달 구조 사용 */
+        .hot-stock-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid #e0e0e0;
+            position: relative;
+        }
+
+        .hot-stock-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .hot-stock-card.is-hot {
+            border-color: #ff6b6b;
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%);
+        }
+
+        .hot-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .hot-stock-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .hot-stock-ticker {
+            color: #667eea;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .hot-score-bar {
+            background: #f0f0f0;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .hot-score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffc107 0%, #ff6b6b 50%, #dc3545 100%);
+            transition: width 0.5s ease;
+        }
+
+        .hot-score-text {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin: 5px 0;
+        }
+
+        .hot-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .hot-info-label {
+            color: #666;
+        }
+
+        .hot-info-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .hot-reasons {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .hot-reason-item {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 8px;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hot-reason-icon {
+            font-size: 1.2em;
+        }
+
         @media (max-width: 968px) {
             .main-content {
                 grid-template-columns: 1fr;
             }
             .info-grid {
+                grid-template-columns: 1fr;
+            }
+            .commodity-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -386,6 +572,36 @@
 <body>
     <!-- 전역 툴팁 -->
     <div id="global-tooltip"></div>
+
+    <!-- 원자재 모달 -->
+    <div id="commodity-modal" class="commodity-modal">
+        <div class="commodity-content">
+            <span class="commodity-close" onclick="closeCommodities()">&times;</span>
+            <h2 style="color: #667eea; margin-bottom: 10px;">원자재 시장 현황</h2>
+            <p style="color: #666; margin-bottom: 20px;">주요 원자재 가격 및 추세를 확인하세요</p>
+            <div id="commodity-list" class="commodity-grid">
+                <div style="text-align: center; padding: 40px; color: #999;">
+                    로딩 중...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 핫 종목 모달 -->
+    <div id="hot-stock-modal" class="commodity-modal">
+        <div class="commodity-content">
+            <span class="commodity-close" onclick="closeHotStocks()">&times;</span>
+            <h2 style="color: #ff6b6b; margin-bottom: 10px;">🔥 핫 종목 추천</h2>
+            <p style="color: #666; margin-bottom: 20px;">
+                AI가 거래량, 모멘텀, 기술적 지표를 분석하여 추천하는 종목입니다
+            </p>
+            <div id="hot-stock-list" class="commodity-grid">
+                <div style="text-align: center; padding: 40px; color: #999;">
+                    로딩 중...
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="container">
         <header>
@@ -401,6 +617,8 @@
                 <div class="tabs">
                     <button class="tab active" onclick="switchTab('stock')">주식</button>
                     <button class="tab" onclick="switchTab('crypto')">가상화폐</button>
+                    <button class="tab" onclick="showCommodities()">원자재</button>
+                    <button class="tab" onclick="showHotStocks()">🔥 핫 종목</button>
                 </div>
 
                 <!-- 주식 탭 -->
@@ -858,6 +1076,629 @@
                 `;
             }
 
+            // 뉴스 목록 (Phase 2-2: 다중 소스, 링크, 아이콘)
+            if (data.news && data.news.length > 0) {
+                html += `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" id="header-news" onclick="toggleCollapse('news')">
+                            <h3>📰 최근 뉴스 (${data.news.length}개)</h3>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content" id="content-news">
+                            <div class="collapsible-body">
+                                ${data.news.map((news, idx) => {
+                                    const sourceIcon = news.source_type === 'domestic' ? '🇰🇷' : '🌐';
+                                    const sourceLabel = news.source_type === 'domestic' ? '국내' : '외신';
+                                    const newsLink = news['링크'] || news['url'] || '#';
+                                    const newsSource = news['출처'] || news['언론사'] || '알 수 없음';
+                                    const newsDate = news['날짜'] ? (typeof news['날짜'] === 'string' ? news['날짜'] : new Date(news['날짜']).toLocaleDateString('ko-KR')) : '';
+
+                                    return `
+                                        <div class="detail-item">
+                                            <div class="detail-title">
+                                                <a href="${newsLink}" target="_blank" style="color: #333; text-decoration: none;">
+                                                    ${sourceIcon} ${news['제목']}
+                                                </a>
+                                            </div>
+                                            <div class="detail-description">
+                                                ${news['설명'] || ''}
+                                                <br><br>
+                                                <small style="color: #999;">
+                                                    <strong>${sourceLabel}</strong> | ${news['언론사']} | ${newsDate}
+                                                    ${newsSource !== news['언론사'] ? ` | 출처: ${newsSource}` : ''}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Phase 3-1: 패턴 분석 결과
+            if (data.patterns && (data.patterns.candlestick_patterns?.length > 0 || data.patterns.chart_patterns?.length > 0)) {
+                html += `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header active" id="header-patterns" onclick="toggleCollapse('patterns')">
+                            <h3>🔮 차트 패턴 분석</h3>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content active" id="content-patterns">
+                            <div class="collapsible-body">
+                                <div class="detail-item" style="border-left-color: #ff6b6b; background: #fff5f5;">
+                                    <div class="detail-title">발견된 패턴: ${data.patterns.total_patterns}개</div>
+                                    <div class="detail-description">
+                                        <strong>패턴 신뢰도:</strong> ${data.patterns.pattern_score.toFixed(1)}점 / 100점<br>
+                                        <strong>패턴 시그널:</strong> ${
+                                            data.patterns.pattern_signal === 'strong_buy' ? '🟢 강력 매수' :
+                                            data.patterns.pattern_signal === 'buy' ? '🔵 매수' :
+                                            data.patterns.pattern_signal === 'neutral' ? '⚪ 중립' :
+                                            data.patterns.pattern_signal === 'sell' ? '🟡 매도' :
+                                            data.patterns.pattern_signal === 'strong_sell' ? '🔴 강력 매도' : '중립'
+                                        }
+                                    </div>
+                                </div>
+
+                                ${data.patterns.candlestick_patterns && data.patterns.candlestick_patterns.length > 0 ? `
+                                    <div class="detail-item">
+                                        <div class="detail-title">📊 캔들스틱 패턴 (${data.patterns.candlestick_patterns.length}개)</div>
+                                        <div class="detail-description">
+                                            ${data.patterns.candlestick_patterns.map(p => `
+                                                <div style="background: white; padding: 10px; margin: 8px 0; border-radius: 6px; border-left: 3px solid ${
+                                                    p.signal === 'buy' ? '#28a745' :
+                                                    p.signal === 'sell' ? '#dc3545' : '#ffc107'
+                                                };">
+                                                    <strong>${p.icon} ${p.name}</strong> (신뢰도: ${p.reliability}%)<br>
+                                                    <small style="color: #666;">${p.description}</small><br>
+                                                    <small style="color: #999;">발견일: ${typeof p.date === 'string' ? p.date : new Date(p.date).toLocaleDateString('ko-KR')}</small>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                ${data.patterns.chart_patterns && data.patterns.chart_patterns.length > 0 ? `
+                                    <div class="detail-item">
+                                        <div class="detail-title">📈 차트 패턴 (${data.patterns.chart_patterns.length}개)</div>
+                                        <div class="detail-description">
+                                            ${data.patterns.chart_patterns.map(p => `
+                                                <div style="background: white; padding: 10px; margin: 8px 0; border-radius: 6px; border-left: 3px solid ${
+                                                    p.signal === 'buy' ? '#28a745' :
+                                                    p.signal === 'sell' ? '#dc3545' : '#ffc107'
+                                                };">
+                                                    <strong>${p.icon} ${p.name}</strong> (신뢰도: ${p.reliability}%)<br>
+                                                    <small style="color: #666;">${p.description}</small><br>
+                                                    <small style="color: #999;">발견일: ${typeof p.date === 'string' ? p.date : new Date(p.date).toLocaleDateString('ko-KR')}</small>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <div class="detail-item" style="background: #f8f9fa;">
+                                    <div class="detail-description" style="font-size: 0.85em; color: #666;">
+                                        <strong>💡 패턴 분석이란?</strong><br>
+                                        과거 주가 데이터에서 반복적으로 나타나는 형태를 AI가 자동으로 인식합니다.
+                                        캔들스틱 패턴은 단기(1-3일), 차트 패턴은 중장기(10-20일) 추세를 예측하는데 유용합니다.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Phase 3-2: 볼린저 밴드 & RSI 전략 분석
+            if (data.bollinger_rsi) {
+                const bb = data.bollinger_rsi.bollinger_bands;
+                const rsi = data.bollinger_rsi.rsi_analysis;
+                const combined = data.bollinger_rsi;
+
+                html += `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header active" id="header-bollinger-rsi" onclick="toggleCollapse('bollinger-rsi')">
+                            <h3>📊 볼린저 밴드 & RSI 전략</h3>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content active" id="content-bollinger-rsi">
+                            <div class="collapsible-body">
+                                <!-- 종합 시그널 -->
+                                <div class="detail-item" style="border-left-color: #667eea; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                                    <div class="detail-title">📌 종합 트레이딩 시그널</div>
+                                    <div class="detail-description">
+                                        <strong>시그널:</strong> ${
+                                            combined.combined_signal === 'strong_buy' ? '🟢 강력 매수' :
+                                            combined.combined_signal === 'buy' ? '🔵 매수' :
+                                            combined.combined_signal === 'neutral' ? '⚪ 중립' :
+                                            combined.combined_signal === 'sell' ? '🟡 매도' :
+                                            combined.combined_signal === 'strong_sell' ? '🔴 강력 매도' : '중립'
+                                        }<br>
+                                        <strong>종합 점수:</strong> ${combined.combined_score.toFixed(1)}점 / 100점<br><br>
+                                        <small style="color: #666;">
+                                            볼린저 밴드와 RSI 지표를 종합하여 계산된 트레이딩 시그널입니다.
+                                            RSI에 1.2배 가중치를 부여하여 모멘텀을 더 중시합니다.
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- 볼린저 밴드 분석 -->
+                                ${bb && bb.current_price ? `
+                                    <div class="detail-item" style="border-left-color: #28a745;">
+                                        <div class="detail-title">📈 볼린저 밴드 (Bollinger Bands)</div>
+                                        <div class="detail-description">
+                                            <strong>📊 현재 상태:</strong><br>
+                                            • 현재가: ${bb.current_price.toLocaleString(undefined, {maximumFractionDigits: 2})}<br>
+                                            • 상단 밴드: ${bb.bb_upper.toLocaleString(undefined, {maximumFractionDigits: 2})}<br>
+                                            • 중간선 (20일 이평): ${bb.bb_middle.toLocaleString(undefined, {maximumFractionDigits: 2})}<br>
+                                            • 하단 밴드: ${bb.bb_lower.toLocaleString(undefined, {maximumFractionDigits: 2})}<br>
+                                            • %B 지표: ${bb.percent_b.toFixed(2)} ${
+                                                bb.percent_b > 1.0 ? '(상단 밴드 위 🔴)' :
+                                                bb.percent_b > 0.8 ? '(상단 근처 🟡)' :
+                                                bb.percent_b > 0.5 ? '(중간선 위 🟢)' :
+                                                bb.percent_b > 0.2 ? '(중간선 아래 🟡)' :
+                                                '(하단 근처 🔵)'
+                                            }<br>
+                                            • 밴드폭: ${(bb.bb_width * 100).toFixed(2)}%<br><br>
+
+                                            <strong>📍 가격 위치:</strong> ${bb.description}<br><br>
+
+                                            ${bb.breakout ? `
+                                                <strong style="color: #ff6b6b;">${bb.breakout.icon} 돌파 감지!</strong><br>
+                                                ${bb.breakout.description}<br><br>
+                                            ` : ''}
+
+                                            <strong>💡 볼린저 밴드란?</strong><br>
+                                            • 가격이 <strong>상단 밴드</strong>에 닿으면 과매수 (조정 가능성)<br>
+                                            • 가격이 <strong>하단 밴드</strong>에 닿으면 과매도 (반등 가능성)<br>
+                                            • 가격이 <strong>중간선</strong>을 상향 돌파하면 상승 전환<br>
+                                            • <strong>밴드폭 수축</strong> 시 큰 움직임 임박 (${bb.squeeze_status === 'squeeze' ? '⚡ 현재 수축 중!' : '정상'})<br>
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- RSI 분석 -->
+                                ${rsi && rsi.current_rsi ? `
+                                    <div class="detail-item" style="border-left-color: #dc3545;">
+                                        <div class="detail-title">⚡ RSI (Relative Strength Index)</div>
+                                        <div class="detail-description">
+                                            <strong>📊 현재 RSI:</strong> ${rsi.current_rsi.toFixed(1)} / 100<br><br>
+
+                                            <strong>📍 상태:</strong> ${rsi.description}<br><br>
+
+                                            ${rsi.divergence ? `
+                                                <strong style="color: #ff6b6b;">${rsi.divergence.icon} 다이버전스 발견!</strong><br>
+                                                ${rsi.divergence.description}<br>
+                                                <strong>신뢰도:</strong> ${rsi.divergence.reliability}%<br><br>
+                                            ` : ''}
+
+                                            <strong>💡 RSI 해석:</strong><br>
+                                            • <strong>70 이상:</strong> 과매수 구간 (조정 가능성 ↑)<br>
+                                            • <strong>30 이하:</strong> 과매도 구간 (반등 가능성 ↑)<br>
+                                            • <strong>30~70:</strong> 중립 구간 (정상 거래)<br>
+                                            • <strong>다이버전스:</strong> 가격과 RSI가 반대로 움직이면 추세 전환 신호<br>
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 전략 제안 -->
+                                ${combined.strategy_suggestions && combined.strategy_suggestions.length > 0 ? `
+                                    <div class="detail-item" style="border-left-color: #667eea; background: #fff9e6;">
+                                        <div class="detail-title">💡 추천 트레이딩 전략 (${combined.strategy_suggestions.length}개)</div>
+                                        <div class="detail-description">
+                                            ${combined.strategy_suggestions.map((suggestion, idx) => `
+                                                <div style="background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border: 2px solid #667eea;">
+                                                    <strong>${suggestion.icon} ${idx + 1}. ${suggestion.strategy}</strong><br>
+                                                    <strong style="color: ${suggestion.action.includes('매수') ? '#28a745' : suggestion.action.includes('매도') ? '#dc3545' : '#ffc107'};">
+                                                        행동: ${suggestion.action}
+                                                    </strong><br>
+                                                    <strong>신뢰도: ${suggestion.confidence}%</strong><br><br>
+
+                                                    <strong>📌 이유:</strong><br>
+                                                    ${suggestion.reason}<br><br>
+
+                                                    <strong>🎯 진입 시점:</strong><br>
+                                                    ${suggestion.entry}<br><br>
+
+                                                    <strong>🎯 목표가:</strong><br>
+                                                    ${suggestion.target}<br><br>
+
+                                                    <strong>⛔ 손절 기준:</strong><br>
+                                                    ${suggestion.stop_loss}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 사용법 안내 -->
+                                <div class="detail-item" style="background: #f8f9fa;">
+                                    <div class="detail-description" style="font-size: 0.85em; color: #666;">
+                                        <strong>💡 이 전략을 활용하는 방법:</strong><br>
+                                        1. <strong>볼린저 밴드</strong>로 과매수/과매도 구간 파악<br>
+                                        2. <strong>RSI</strong>로 모멘텀 확인 (추세 강도)<br>
+                                        3. <strong>종합 시그널</strong>로 매매 타이밍 판단<br>
+                                        4. <strong>추천 전략</strong> 참고하여 진입/청산 계획 수립<br>
+                                        5. ⚠️ <strong>손절가</strong> 반드시 설정하여 리스크 관리<br><br>
+
+                                        <strong>⚠️ 주의사항:</strong><br>
+                                        • 강한 추세장에서는 과매수/과매도 신호가 일찍 나올 수 있음<br>
+                                        • 여러 지표를 종합적으로 판단하고, 기업 기본면도 확인 필수<br>
+                                        • 본 전략은 참고용이며, 투자 판단은 본인 책임입니다
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Phase 3-3: 이동평균선 크로스 전략 분석
+            if (data.ma_cross) {
+                const ma = data.ma_cross.moving_averages;
+                const crosses = data.ma_cross.crosses;
+                const alignment = data.ma_cross.alignment;
+                const disparity = data.ma_cross.disparity;
+
+                html += `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header active" id="header-ma-cross" onclick="toggleCollapse('ma-cross')">
+                            <h3>📈 이동평균선 크로스 전략</h3>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content active" id="content-ma-cross">
+                            <div class="collapsible-body">
+                                <!-- 종합 시그널 -->
+                                <div class="detail-item" style="border-left-color: #28a745; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                                    <div class="detail-title">📌 종합 시그널</div>
+                                    <div class="detail-description">
+                                        <strong>시그널:</strong> ${
+                                            data.ma_cross.signal === 'strong_buy' ? '🟢 강력 매수' :
+                                            data.ma_cross.signal === 'buy' ? '🔵 매수' :
+                                            data.ma_cross.signal === 'neutral' ? '⚪ 중립' :
+                                            data.ma_cross.signal === 'sell' ? '🟡 매도' :
+                                            data.ma_cross.signal === 'strong_sell' ? '🔴 강력 매도' : '중립'
+                                        }<br>
+                                        <strong>종합 점수:</strong> ${data.ma_cross.score.toFixed(1)}점 / 100점<br><br>
+                                        <small style="color: #666;">
+                                            골든크로스/데드크로스, 이동평균선 배열, 이격도를 종합하여 계산된 신호입니다.
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- 이동평균선 현재 값 -->
+                                ${ma && ma.ma5 ? `
+                                    <div class="detail-item" style="border-left-color: #17a2b8;">
+                                        <div class="detail-title">📊 이동평균선 현재 값</div>
+                                        <div class="detail-description">
+                                            <strong>현재가:</strong> ${ma.current_price.toLocaleString(undefined, {maximumFractionDigits: 2})}원<br><br>
+
+                                            <strong>5일 이평선:</strong> ${ma.ma5.toLocaleString(undefined, {maximumFractionDigits: 2})}원<br>
+                                            <strong>20일 이평선:</strong> ${ma.ma20.toLocaleString(undefined, {maximumFractionDigits: 2})}원<br>
+                                            <strong>60일 이평선:</strong> ${ma.ma60.toLocaleString(undefined, {maximumFractionDigits: 2})}원<br>
+                                            <strong>120일 이평선:</strong> ${ma.ma120.toLocaleString(undefined, {maximumFractionDigits: 2})}원<br><br>
+
+                                            <strong>💡 이동평균선이란?</strong><br>
+                                            일정 기간 동안의 평균 가격을 연결한 선으로, 추세를 파악하는 가장 기본적인 지표입니다.
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 골든크로스/데드크로스 -->
+                                ${crosses && crosses.length > 0 ? `
+                                    <div class="detail-item" style="border-left-color: #ff6b6b; background: #fff5f5;">
+                                        <div class="detail-title">🔴 크로스 감지! (${crosses.length}개)</div>
+                                        <div class="detail-description">
+                                            ${crosses.map(cross => `
+                                                <div style="background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border: 2px solid ${
+                                                    cross.type === 'golden' ? '#28a745' : '#dc3545'
+                                                };">
+                                                    <strong>${cross.icon} ${cross.description}</strong><br>
+                                                    <strong>신뢰도: ${cross.reliability}%</strong><br>
+                                                    <strong>타입:</strong> ${cross.short_ma}일선 x ${cross.long_ma}일선<br>
+                                                    <strong>발생일:</strong> ${typeof cross.date === 'string' ? cross.date : new Date(cross.date).toLocaleDateString('ko-KR')}<br>
+                                                    <strong>가격:</strong> ${cross.price.toLocaleString(undefined, {maximumFractionDigits: 2})}원<br>
+                                                </div>
+                                            `).join('')}
+
+                                            <div style="background: #f8f9fa; padding: 10px; margin-top: 10px; border-radius: 6px;">
+                                                <strong>💡 골든크로스/데드크로스란?</strong><br>
+                                                • <strong>골든크로스:</strong> 단기선이 장기선을 상향 돌파 → 상승 신호<br>
+                                                • <strong>데드크로스:</strong> 단기선이 장기선을 하향 돌파 → 하락 신호<br>
+                                                • <strong>신뢰도:</strong> 장기 조합일수록 신뢰도가 높습니다 (예: 20x60일 > 5x20일)
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 이동평균선 배열 -->
+                                ${alignment && alignment.type ? `
+                                    <div class="detail-item" style="border-left-color: ${
+                                        alignment.type.includes('bull') ? '#28a745' :
+                                        alignment.type.includes('bear') ? '#dc3545' : '#ffc107'
+                                    };">
+                                        <div class="detail-title">${alignment.icon} ${alignment.description}</div>
+                                        <div class="detail-description">
+                                            <strong>배열 점수:</strong> ${alignment.score}/100<br><br>
+
+                                            <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; white-space: pre-line;">
+                                                ${alignment.details}
+                                            </div><br>
+
+                                            <strong>💡 이동평균선 배열이란?</strong><br>
+                                            • <strong>정배열:</strong> 현재가 > 5일 > 20일 > 60일 > 120일 → 강한 상승 추세<br>
+                                            • <strong>역배열:</strong> 현재가 < 5일 < 20일 < 60일 < 120일 → 강한 하락 추세<br>
+                                            • <strong>부분 배열:</strong> 일부만 정렬 → 추세 전환 중 또는 방향성 불분명<br>
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 이격도 분석 -->
+                                ${disparity && disparity.status !== 'calculating' ? `
+                                    <div class="detail-item" style="border-left-color: #667eea;">
+                                        <div class="detail-title">${disparity.icon} 이격도 분석</div>
+                                        <div class="detail-description">
+                                            <strong>상태:</strong> ${disparity.description}<br><br>
+
+                                            <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; white-space: pre-line;">
+                                                ${disparity.details}
+                                            </div><br>
+
+                                            <strong>💡 이격도란?</strong><br>
+                                            현재가가 이동평균선에서 얼마나 떨어져 있는지를 나타내는 지표입니다.<br>
+                                            • <strong>110% 이상:</strong> 과열 구간 (조정 가능성 ↑)<br>
+                                            • <strong>105~110%:</strong> 강세 구간 (양호)<br>
+                                            • <strong>95~105%:</strong> 중립 구간 (정상)<br>
+                                            • <strong>90~95%:</strong> 약세 구간 (저평가 가능성)<br>
+                                            • <strong>90% 이하:</strong> 과매도 구간 (반등 가능성 ↑)
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 추천 전략 -->
+                                ${data.ma_cross.recommendations && data.ma_cross.recommendations.length > 0 ? `
+                                    <div class="detail-item" style="border-left-color: #28a745; background: #f0f8ff;">
+                                        <div class="detail-title">💡 추천 투자 전략 (${data.ma_cross.recommendations.length}개)</div>
+                                        <div class="detail-description">
+                                            ${data.ma_cross.recommendations.map((rec, idx) => `
+                                                <div style="background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border: 2px solid #28a745;">
+                                                    <strong>${rec.icon} ${idx + 1}. ${rec.strategy}</strong><br>
+                                                    <strong style="color: ${rec.action.includes('매수') ? '#28a745' : rec.action.includes('매도') ? '#dc3545' : '#ffc107'};">
+                                                        행동: ${rec.action}
+                                                    </strong><br>
+                                                    <strong>신뢰도: ${rec.confidence}%</strong><br><br>
+
+                                                    <strong>📌 이유:</strong><br>
+                                                    ${rec.reason}<br><br>
+
+                                                    <strong>🎯 진입 시점:</strong><br>
+                                                    ${rec.entry}<br><br>
+
+                                                    <strong>🎯 목표가:</strong><br>
+                                                    ${rec.target}<br><br>
+
+                                                    <strong>⛔ 손절 기준:</strong><br>
+                                                    ${rec.stop_loss}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 사용법 안내 -->
+                                <div class="detail-item" style="background: #f8f9fa;">
+                                    <div class="detail-description" style="font-size: 0.85em; color: #666;">
+                                        <strong>💡 이 전략을 활용하는 방법:</strong><br>
+                                        1. <strong>골든크로스/데드크로스</strong>로 매매 타이밍 포착<br>
+                                        2. <strong>이동평균선 배열</strong>로 전체 추세 파악<br>
+                                        3. <strong>이격도</strong>로 과열/과매도 구간 판단<br>
+                                        4. <strong>추천 전략</strong> 참고하여 진입/청산 계획 수립<br>
+                                        5. ⚠️ <strong>추세 확인</strong> 후 진입하여 리스크 최소화<br><br>
+
+                                        <strong>⚠️ 주의사항:</strong><br>
+                                        • 이동평균선은 후행 지표이므로 신호가 늦을 수 있음<br>
+                                        • 횡보장에서는 허위 신호 발생 가능성<br>
+                                        • 다른 지표(RSI, 볼린저 밴드 등)와 함께 사용 권장<br>
+                                        • 본 전략은 참고용이며, 투자 판단은 본인 책임입니다
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Phase 3-4: 거래량 분석
+            if (data.volume) {
+                const vol = data.volume;
+
+                html += `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header active" id="header-volume" onclick="toggleCollapse('volume')">
+                            <h3>📊 거래량 분석</h3>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content active" id="content-volume">
+                            <div class="collapsible-body">
+                                <!-- 종합 시그널 -->
+                                <div class="detail-item" style="border-left-color: #ffc107; background: linear-gradient(135deg, #f8f9fa 0%, #fff9e6 100%);">
+                                    <div class="detail-title">📌 거래량 종합 시그널</div>
+                                    <div class="detail-description">
+                                        <strong>시그널:</strong> ${
+                                            vol.signal === 'strong_buy' ? '🟢 강력 매수' :
+                                            vol.signal === 'buy' ? '🔵 매수' :
+                                            vol.signal === 'neutral' ? '⚪ 중립' :
+                                            vol.signal === 'sell' ? '🟡 매도' :
+                                            vol.signal === 'strong_sell' ? '🔴 강력 매도' : '중립'
+                                        }<br>
+                                        <strong>종합 점수:</strong> ${vol.score.toFixed(1)}점 / 100점<br><br>
+                                        <small style="color: #666;">
+                                            거래량, 거래대금, 가격-거래량 상관관계를 종합하여 계산된 신호입니다.
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- 현재 거래량 -->
+                                ${vol.current_volume && vol.current_volume.current ? `
+                                    <div class="detail-item" style="border-left-color: ${vol.current_volume.status.color};">
+                                        <div class="detail-title">${vol.current_volume.status.icon} ${vol.current_volume.status.description}</div>
+                                        <div class="detail-description">
+                                            <strong>현재 거래량:</strong> ${vol.current_volume.current.toLocaleString()}주<br>
+                                            <strong>전일 거래량:</strong> ${vol.current_volume.previous.toLocaleString()}주<br>
+                                            <strong>20일 평균:</strong> ${vol.current_volume.average_20d.toLocaleString()}주<br><br>
+
+                                            <strong>전일 대비:</strong> ${vol.current_volume.change_pct >= 0 ? '+' : ''}${vol.current_volume.change_pct.toFixed(1)}%<br>
+                                            <strong>평균 대비:</strong> ${vol.current_volume.ratio_to_avg.toFixed(1)}% (평균의 ${(vol.current_volume.ratio_to_avg/100).toFixed(2)}배)<br><br>
+
+                                            <strong>💡 거래량이란?</strong><br>
+                                            특정 기간 동안 거래된 주식 수량입니다. 거래량이 많으면 시장 참여자들의 관심이 높다는 의미입니다.
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 거래량 급등/급락 -->
+                                ${vol.volume_surge && vol.volume_surge.detected ? `
+                                    <div class="detail-item" style="border-left-color: #ff6b6b; background: #fff5f5;">
+                                        <div class="detail-title">${vol.volume_surge.icon} 거래량 이상 감지!</div>
+                                        <div class="detail-description">
+                                            <strong>${vol.volume_surge.description}</strong><br>
+                                            <strong>평균 대비 비율:</strong> ${vol.volume_surge.ratio.toFixed(0)}%<br>
+                                            <strong>신뢰도:</strong> ${vol.volume_surge.reliability}%<br><br>
+
+                                            ${vol.volume_surge.type === 'extreme_surge' ? `
+                                                <div style="background: #ffe0e0; padding: 10px; border-radius: 6px; margin-top: 10px;">
+                                                    <strong>⚠️ 거래량 폭등 주의!</strong><br>
+                                                    • 대량 거래가 발생하고 있습니다<br>
+                                                    • 중요한 뉴스나 이벤트 확인 필요<br>
+                                                    • 가격 변동성 증가 가능성
+                                                </div>
+                                            ` : vol.volume_surge.type === 'surge' ? `
+                                                <div style="background: #fff0e0; padding: 10px; border-radius: 6px; margin-top: 10px;">
+                                                    <strong>📈 거래량 급등!</strong><br>
+                                                    • 시장 관심도가 높아지고 있습니다<br>
+                                                    • 가격 방향성 주의 깊게 관찰 필요
+                                                </div>
+                                            ` : `
+                                                <div style="background: #e0e0e0; padding: 10px; border-radius: 6px; margin-top: 10px;">
+                                                    <strong>💤 거래량 급감</strong><br>
+                                                    • 시장 관심도가 낮아지고 있습니다<br>
+                                                    • 거래량 회복 시까지 관망 권장
+                                                </div>
+                                            `}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 거래량 이동평균 -->
+                                ${vol.volume_ma && vol.volume_ma.ma5 ? `
+                                    <div class="detail-item" style="border-left-color: #17a2b8;">
+                                        <div class="detail-title">📊 거래량 이동평균</div>
+                                        <div class="detail-description">
+                                            <strong>5일 평균:</strong> ${vol.volume_ma.ma5.toLocaleString()}주<br>
+                                            <strong>20일 평균:</strong> ${vol.volume_ma.ma20.toLocaleString()}주<br>
+                                            <strong>60일 평균:</strong> ${vol.volume_ma.ma60.toLocaleString()}주<br><br>
+
+                                            <strong>추세:</strong> ${vol.volume_ma.trend.icon} ${vol.volume_ma.trend.description}<br>
+                                            ${vol.volume_ma.trend.slope_pct ? `<strong>추세 강도:</strong> ${vol.volume_ma.trend.slope_pct >= 0 ? '+' : ''}${vol.volume_ma.trend.slope_pct.toFixed(1)}%/일<br>` : ''}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 가격-거래량 상관관계 -->
+                                ${vol.price_volume_correlation && vol.price_volume_correlation.pattern ? `
+                                    <div class="detail-item" style="border-left-color: #667eea; background: #f0f0ff;">
+                                        <div class="detail-title">${vol.price_volume_correlation.pattern.icon} 가격-거래량 패턴</div>
+                                        <div class="detail-description">
+                                            <strong>패턴:</strong> ${vol.price_volume_correlation.pattern.description}<br>
+                                            <strong>신뢰도:</strong> ${vol.price_volume_correlation.pattern.reliability}%<br><br>
+
+                                            <strong>최근 5일 변화:</strong><br>
+                                            • 가격 변동: ${vol.price_volume_correlation.price_change_pct >= 0 ? '+' : ''}${vol.price_volume_correlation.price_change_pct.toFixed(1)}%<br>
+                                            • 거래량 변동: ${vol.price_volume_correlation.volume_change_pct >= 0 ? '+' : ''}${vol.price_volume_correlation.volume_change_pct.toFixed(1)}%<br><br>
+
+                                            <div style="background: white; padding: 10px; border-radius: 6px; border-left: 3px solid ${
+                                                vol.price_volume_correlation.pattern.signal === 'strong_buy' ? '#28a745' :
+                                                vol.price_volume_correlation.pattern.signal === 'strong_sell' ? '#dc3545' :
+                                                vol.price_volume_correlation.pattern.signal === 'caution' ? '#ffc107' : '#17a2b8'
+                                            };">
+                                                <strong>💡 분석:</strong><br>
+                                                ${vol.price_volume_correlation.pattern.explanation}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 거래대금 -->
+                                ${vol.trading_value && vol.trading_value.current ? `
+                                    <div class="detail-item" style="border-left-color: #28a745;">
+                                        <div class="detail-title">💰 거래대금</div>
+                                        <div class="detail-description">
+                                            <strong>오늘 거래대금:</strong> ${(vol.trading_value.current / 100000000).toFixed(0)}억원<br>
+                                            <strong>20일 평균:</strong> ${(vol.trading_value.average_20d / 100000000).toFixed(0)}억원<br>
+                                            <strong>평균 대비:</strong> ${vol.trading_value.ratio.toFixed(1)}%<br>
+                                            <strong>상태:</strong> ${vol.trading_value.status}<br><br>
+
+                                            <strong>💡 거래대금이란?</strong><br>
+                                            거래량 × 가격으로 계산되며, 실제 돈이 얼마나 움직였는지를 나타냅니다.
+                                            거래대금이 높으면 큰 손들의 참여가 많다는 의미입니다.
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 추천 전략 -->
+                                ${vol.recommendations && vol.recommendations.length > 0 ? `
+                                    <div class="detail-item" style="border-left-color: #ffc107; background: #fffbf0;">
+                                        <div class="detail-title">💡 거래량 기반 투자 전략 (${vol.recommendations.length}개)</div>
+                                        <div class="detail-description">
+                                            ${vol.recommendations.map((rec, idx) => `
+                                                <div style="background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border: 2px solid #ffc107;">
+                                                    <strong>${rec.icon} ${idx + 1}. ${rec.strategy}</strong><br>
+                                                    <strong style="color: ${rec.action.includes('매수') ? '#28a745' : rec.action.includes('매도') ? '#dc3545' : '#ffc107'};">
+                                                        행동: ${rec.action}
+                                                    </strong><br>
+                                                    <strong>신뢰도: ${rec.confidence}%</strong><br><br>
+
+                                                    <strong>📌 이유:</strong><br>
+                                                    ${rec.reason}<br><br>
+
+                                                    <strong>🎯 진입 시점:</strong><br>
+                                                    ${rec.entry}<br><br>
+
+                                                    <strong>🎯 목표:</strong><br>
+                                                    ${rec.target}<br><br>
+
+                                                    <strong>⛔ 손절 기준:</strong><br>
+                                                    ${rec.stop_loss}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- 사용법 안내 -->
+                                <div class="detail-item" style="background: #f8f9fa;">
+                                    <div class="detail-description" style="font-size: 0.85em; color: #666;">
+                                        <strong>💡 거래량 분석 활용법:</strong><br>
+                                        1. <strong>거래량 급등</strong> 시 가격 방향성 확인<br>
+                                        2. <strong>가격↑ + 거래량↑</strong> = 강한 상승 (매수 타이밍)<br>
+                                        3. <strong>가격↓ + 거래량↑</strong> = 강한 하락 (매도 타이밍)<br>
+                                        4. <strong>가격↑ + 거래량↓</strong> = 약한 상승 (조정 가능성)<br>
+                                        5. <strong>거래량 추세</strong>로 시장 관심도 파악<br><br>
+
+                                        <strong>⚠️ 주의사항:</strong><br>
+                                        • 거래량은 시장 관심도를 나타내지만 방향성은 별개<br>
+                                        • 거래량 폭등 시 반드시 뉴스 확인 필요<br>
+                                        • 거래량 감소 시 유동성 리스크 고려<br>
+                                        • 본 분석은 참고용이며, 투자 판단은 본인 책임입니다
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
             // 신뢰도 세부 분석
             if (data.confidence.breakdown) {
                 html += `
@@ -1124,6 +1965,186 @@
                 document.body.removeChild(textArea);
                 alert('✅ 클립보드에 복사되었습니다!');
             });
+        }
+
+        // 원자재 기능
+        async function showCommodities() {
+            const modal = document.getElementById('commodity-modal');
+            const listDiv = document.getElementById('commodity-list');
+
+            modal.classList.add('show');
+            listDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;"><div class="spinner"></div><p>원자재 데이터 로딩 중...</p></div>';
+
+            try {
+                const response = await fetch('/api/commodities?type=major&period=1mo');
+                const result = await response.json();
+
+                if (response.ok && result.data) {
+                    displayCommodities(result.data);
+                } else {
+                    listDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;">데이터 로딩 실패</div>';
+                }
+            } catch (error) {
+                listDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;">오류 발생: ' + error.message + '</div>';
+            }
+        }
+
+        function displayCommodities(data) {
+            const listDiv = document.getElementById('commodity-list');
+
+            const html = Object.values(data).map(commodity => {
+                const changeColor = commodity.price_change_pct >= 0 ? '#28a745' : '#dc3545';
+                const changeIcon = commodity.price_change_pct >= 0 ? '▲' : '▼';
+                const trendEmoji = commodity.trend.direction === 'uptrend' ? '📈' :
+                                  commodity.trend.direction === 'downtrend' ? '📉' : '➡️';
+
+                return `
+                    <div class="commodity-card">
+                        <div class="commodity-name">${trendEmoji} ${commodity.name}</div>
+                        <div class="commodity-price">${commodity.current_price} ${commodity.unit}</div>
+                        <div class="commodity-change" style="color: ${changeColor}">
+                            ${changeIcon} ${Math.abs(commodity.price_change_pct)}%
+                            (${commodity.price_change >= 0 ? '+' : ''}${commodity.price_change})
+                        </div>
+                        <div style="font-size: 0.85em; margin-top: 10px; opacity: 0.9;">
+                            ${commodity.trend.description}
+                        </div>
+                        ${commodity.is_mock ? '<div style="font-size: 0.75em; margin-top: 5px; opacity: 0.7;">⚠️ 시뮬레이션 데이터</div>' : ''}
+                    </div>
+                `;
+            }).join('');
+
+            listDiv.innerHTML = html;
+        }
+
+        function closeCommodities() {
+            document.getElementById('commodity-modal').classList.remove('show');
+        }
+
+        // 모달 외부 클릭 시 닫기
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('commodity-modal');
+            if (e.target === modal) {
+                closeCommodities();
+            }
+
+            const hotModal = document.getElementById('hot-stock-modal');
+            if (e.target === hotModal) {
+                closeHotStocks();
+            }
+        });
+
+        // 핫 종목 기능
+        async function showHotStocks() {
+            const modal = document.getElementById('hot-stock-modal');
+            const listDiv = document.getElementById('hot-stock-list');
+
+            modal.classList.add('show');
+            listDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;"><div class="spinner"></div><p>핫 종목 스캔 중... (약 20-30초 소요)</p></div>';
+
+            try {
+                const response = await fetch('/api/hot-stocks');
+                const result = await response.json();
+
+                if (response.ok && result.recommendations) {
+                    displayHotStocks(result.recommendations);
+                } else {
+                    listDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;">핫 종목이 없습니다<br><small>현재 시장 상황에서는 매수 신호가 감지되지 않았습니다</small></div>';
+                }
+            } catch (error) {
+                listDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;">오류 발생: ' + error.message + '</div>';
+            }
+        }
+
+        function displayHotStocks(recommendations) {
+            const listDiv = document.getElementById('hot-stock-list');
+
+            if (!recommendations || recommendations.length === 0) {
+                listDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">핫 종목이 없습니다</div>';
+                return;
+            }
+
+            // 핫 점수 순으로 정렬
+            recommendations.sort((a, b) => b.hot_score - a.hot_score);
+
+            const html = recommendations.map(stock => {
+                const hotClass = stock.is_hot ? 'is-hot' : '';
+                const signalColors = {
+                    'strong_buy': '#28a745',
+                    'buy': '#5cb85c',
+                    'neutral': '#ffc107',
+                    'sell': '#dc3545',
+                    'strong_sell': '#c82333'
+                };
+                const signalNames = {
+                    'strong_buy': '강력 매수',
+                    'buy': '매수',
+                    'neutral': '중립',
+                    'sell': '매도',
+                    'strong_sell': '강력 매도'
+                };
+
+                // 근거 아이콘 맵핑
+                const reasonIcons = {
+                    '거래량': '💹',
+                    '모멘텀': '📈',
+                    '기술적 지표': '📊',
+                    '감성': '📰',
+                    'RSI': '⚡'
+                };
+
+                return `
+                    <div class="hot-stock-card ${hotClass}" onclick="selectTicker('${stock.ticker}', 'stock-ticker'); closeHotStocks(); analyzeStock();">
+                        ${stock.is_hot ? '<div class="hot-badge">🔥 HOT</div>' : ''}
+
+                        <div class="hot-stock-name">${stock.name}</div>
+                        <div class="hot-stock-ticker">${stock.ticker}</div>
+
+                        <div class="hot-score-text">핫 점수: ${stock.hot_score}점</div>
+                        <div class="hot-score-bar">
+                            <div class="hot-score-fill" style="width: ${stock.hot_score}%"></div>
+                        </div>
+
+                        <div class="hot-info-row">
+                            <span class="hot-info-label">현재가</span>
+                            <span class="hot-info-value">${stock.current_price.toLocaleString()}원</span>
+                        </div>
+                        <div class="hot-info-row">
+                            <span class="hot-info-label">신뢰도</span>
+                            <span class="hot-info-value">${stock.confidence}%</span>
+                        </div>
+                        <div class="hot-info-row">
+                            <span class="hot-info-label">RSI</span>
+                            <span class="hot-info-value">${stock.rsi.toFixed(1)}</span>
+                        </div>
+                        <div class="hot-info-row">
+                            <span class="hot-info-label">신호</span>
+                            <span class="hot-info-value" style="color: ${signalColors[stock.signal]}">${signalNames[stock.signal]}</span>
+                        </div>
+
+                        ${stock.reasons && stock.reasons.length > 0 ? `
+                            <div class="hot-reasons">
+                                ${stock.reasons.slice(0, 3).map(reason => `
+                                    <div class="hot-reason-item">
+                                        <span class="hot-reason-icon">${reasonIcons[reason.category] || '💡'}</span>
+                                        <span>${reason.reason}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+
+                        <div style="text-align: center; margin-top: 15px; font-size: 0.85em; color: #667eea;">
+                            클릭하여 상세 분석 보기 →
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            listDiv.innerHTML = html;
+        }
+
+        function closeHotStocks() {
+            document.getElementById('hot-stock-modal').classList.remove('show');
         }
     </script>
 </body>

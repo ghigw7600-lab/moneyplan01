@@ -85,9 +85,11 @@ class NaverNewsCollector:
                         news_list.append({
                             '제목': title,
                             '설명': description,
-                            'url': url,
+                            '링크': url,  # 키 통일
                             '날짜': published_date,
-                            '언론사': source
+                            '언론사': source,
+                            '출처': '네이버 뉴스',
+                            'source_type': 'domestic'  # 네이버는 모두 국내 뉴스
                         })
 
                         if len(news_list) >= max_count:

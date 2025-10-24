@@ -28,7 +28,7 @@ class TechnicalAnalyzer:
         """이동평균선 계산"""
         for period in periods:
             col_name = f'MA{period}'
-            self.data[col_name] = self.data['종가'].rolling(window=period).mean()
+            self.data[col_name] = self.data['Close'].rolling(window=period).mean()
 
         return self.data
 
@@ -37,7 +37,7 @@ class TechnicalAnalyzer:
         RSI (Relative Strength Index) 계산
         0-100 범위, 70 이상 과매수, 30 이하 과매도
         """
-        delta = self.data['종가'].diff()
+        delta = self.data['Close'].diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
 
@@ -51,8 +51,8 @@ class TechnicalAnalyzer:
         """
         MACD (Moving Average Convergence Divergence) 계산
         """
-        exp1 = self.data['종가'].ewm(span=fast, adjust=False).mean()
-        exp2 = self.data['종가'].ewm(span=slow, adjust=False).mean()
+        exp1 = self.data['Close'].ewm(span=fast, adjust=False).mean()
+        exp2 = self.data['Close'].ewm(span=slow, adjust=False).mean()
 
         macd = exp1 - exp2
         macd_signal = macd.ewm(span=signal, adjust=False).mean()
@@ -70,8 +70,8 @@ class TechnicalAnalyzer:
 
     def calculate_bollinger_bands(self, period=20, std_dev=2):
         """볼린저 밴드 계산"""
-        sma = self.data['종가'].rolling(window=period).mean()
-        std = self.data['종가'].rolling(window=period).std()
+        sma = self.data['Close'].rolling(window=period).mean()
+        std = self.data['Close'].rolling(window=period).std()
 
         upper_band = sma + (std * std_dev)
         lower_band = sma - (std * std_dev)
@@ -80,7 +80,7 @@ class TechnicalAnalyzer:
         self.data['BB_Middle'] = sma
         self.data['BB_Lower'] = lower_band
 
-        current_price = self.data['종가'].iloc[-1]
+        current_price = self.data['Close'].iloc[-1]
         return {
             'upper': upper_band.iloc[-1],
             'middle': sma.iloc[-1],
@@ -90,8 +90,8 @@ class TechnicalAnalyzer:
 
     def calculate_volume_analysis(self):
         """거래량 분석"""
-        avg_volume = self.data['거래량'].rolling(window=20).mean()
-        current_volume = self.data['거래량'].iloc[-1]
+        avg_volume = self.data['Volume'].rolling(window=20).mean()
+        current_volume = self.data['Volume'].iloc[-1]
         avg_volume_20 = avg_volume.iloc[-1]
 
         volume_ratio = current_volume / avg_volume_20 if avg_volume_20 > 0 else 1.0
@@ -110,10 +110,10 @@ class TechnicalAnalyzer:
         recent_data = self.data.tail(window)
 
         # 최근 고점/저점
-        high_max = recent_data['고가'].max()
-        low_min = recent_data['저가'].min()
+        high_max = recent_data['High'].max()
+        low_min = recent_data['Low'].min()
 
-        current_price = self.data['종가'].iloc[-1]
+        current_price = self.data['Close'].iloc[-1]
 
         # 현재가와의 거리
         resistance_distance = (high_max - current_price) / current_price
@@ -132,7 +132,7 @@ class TechnicalAnalyzer:
         ma20 = self.data['MA20'].iloc[-1]
         ma60 = self.data['MA60'].iloc[-1]
         ma120 = self.data['MA120'].iloc[-1]
-        current = self.data['종가'].iloc[-1]
+        current = self.data['Close'].iloc[-1]
 
         # 정배열: 단기 > 중기 > 장기
         if current > ma20 > ma60 > ma120:
