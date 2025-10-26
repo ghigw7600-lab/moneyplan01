@@ -803,6 +803,27 @@ def get_economic_events():
         return jsonify({'error': str(e), 'traceback': error_trace}), 500
 
 
+@app.route('/api/backtest/performance', methods=['GET'])
+def get_backtest_performance():
+    """백테스팅 성과 조회 (Phase 5)"""
+    try:
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from backtesting.performance_tracker import PerformanceTracker
+
+        days = int(request.args.get('days', 30))
+        tracker = PerformanceTracker()
+        summary = tracker.get_performance_summary(days)
+
+        return jsonify(summary)
+
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ 백테스트 API 에러:")
+        print(error_trace)
+        return jsonify({'error': str(e), 'traceback': error_trace}), 500
+
+
 def monitoring_loop():
     """백그라운드 모니터링 루프"""
     import time

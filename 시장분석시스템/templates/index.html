@@ -730,6 +730,7 @@
                     <button class="tab" onclick="showCommodities()">원자재</button>
                     <button class="tab" onclick="showHotStocks()">🔥 핫 종목</button>
                     <button class="tab" onclick="switchTab('events')">📅 경제 이벤트</button>
+                    <button class="tab" onclick="switchTab('backtest')">📊 백테스팅</button>
                 </div>
 
                 <!-- 주식 탭 -->
@@ -791,6 +792,25 @@
                         </select>
                     </div>
                     <button onclick="loadEconomicEvents()">📅 이벤트 조회</button>
+                </div>
+
+                <!-- 백테스팅 탭 (Phase 5-4) -->
+                <div id="backtest-tab" class="tab-content">
+                    <div class="input-group">
+                        <label>조회 기간</label>
+                        <select id="backtest-period">
+                            <option value="7">1주일</option>
+                            <option value="30" selected>1개월</option>
+                            <option value="60">2개월</option>
+                            <option value="90">3개월</option>
+                        </select>
+                    </div>
+                    <button onclick="loadBacktestResults()">📊 성과 조회</button>
+                    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; font-size: 0.9em;">
+                        <strong>📌 백테스팅이란?</strong><br>
+                        과거 데이터로 AI 추천의 정확도를 검증합니다.<br>
+                        실시간 추천 성과를 추적하여 시스템 신뢰도를 측정합니다.
+                    </div>
                 </div>
             </div>
 
@@ -2538,6 +2558,76 @@
                     </div>
                 </div>
             `;
+            resultDiv.innerHTML = html;
+        }
+
+        // Phase 5-4: 백테스팅 성과 조회
+        async function loadBacktestResults() {
+            const period = document.getElementById('backtest-period').value;
+            const resultDiv = document.getElementById('result');
+
+            resultDiv.innerHTML = '<div style="text-align: center; padding: 60px 20px; color: #999;"><div class="spinner"></div><p>백테스팅 결과 로딩 중...</p></div>';
+
+            try {
+                const response = await fetch(`/api/backtest/performance?days=${period}`);
+                const result = await response.json();
+
+                if (response.ok && !result.message) {
+                    displayBacktestResults(result);
+                } else {
+                    resultDiv.innerHTML = `<div style="text-align: center; padding: 60px 20px; color: #999;">${result.message || '데이터 없음'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div style="text-align: center; padding: 60px 20px; color: #dc3545;">오류: ' + error.message + '</div>';
+            }
+        }
+
+        function displayBacktestResults(data) {
+            const resultDiv = document.getElementById('result');
+
+            let html = `
+                <div style="padding: 20px;">
+                    <h3 style="margin-bottom: 20px;">📊 백테스팅 성과 보고서</h3>
+                    <p style="color: #667eea; margin-bottom: 30px;">최근 ${data.period_days}일 AI 추천 성과</p>
+
+                    <div class="detail-grid">
+                        <div class="detail-item" style="border-left-color: #667eea;">
+                            <div class="detail-title">총 추천</div>
+                            <div class="detail-value">${data.total_recommendations}건</div>
+                        </div>
+
+                        <div class="detail-item" style="border-left-color: #28a745;">
+                            <div class="detail-title">성공</div>
+                            <div class="detail-value">${data.success_count}건</div>
+                        </div>
+
+                        <div class="detail-item" style="border-left-color: #dc3545;">
+                            <div class="detail-title">실패</div>
+                            <div class="detail-value">${data.fail_count}건</div>
+                        </div>
+
+                        <div class="detail-item" style="border-left-color: #ffc107;">
+                            <div class="detail-title">정확도</div>
+                            <div class="detail-value" style="color: ${data.accuracy >= 60 ? '#28a745' : '#dc3545'};">
+                                ${data.accuracy.toFixed(1)}%
+                            </div>
+                        </div>
+
+                        <div class="detail-item" style="border-left-color: #17a2b8;">
+                            <div class="detail-title">평균 수익률</div>
+                            <div class="detail-value" style="color: ${data.avg_profit_rate >= 0 ? '#28a745' : '#dc3545'};">
+                                ${data.avg_profit_rate >= 0 ? '+' : ''}${data.avg_profit_rate.toFixed(2)}%
+                            </div>
+                        </div>
+
+                        <div class="detail-item" style="border-left-color: #6c757d;">
+                            <div class="detail-title">활성 포지션</div>
+                            <div class="detail-value">${data.active_positions}건</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
             resultDiv.innerHTML = html;
         }
     </script>
