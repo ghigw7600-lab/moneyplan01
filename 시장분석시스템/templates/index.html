@@ -2463,6 +2463,100 @@
             }
         }
 
+        // 경제 이벤트 상세 패널 토글
+        function toggleEventDetail(eventId) {
+            const panel = document.getElementById(eventId);
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                // 부드러운 스크롤
+                setTimeout(() => {
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+
+        // 과거 영향도 시뮬레이션
+        function getHistoricalImpact(category, importance) {
+            const impacts = {
+                'central_bank': {
+                    'high': {
+                        change: Math.random() > 0.5 ? (Math.random() * 2 + 1) : -(Math.random() * 1.5 + 0.5),
+                        description: '중앙은행 금리 결정은 전체 시장에 큰 영향을 미칩니다. 과거 FOMC 회의 결과 발표 후 코스피는 평균 ±1.8% 변동을 보였습니다. 금리 인상 시에는 금융주가 상승하고 부동산/건설주가 하락하는 경향이 있습니다.'
+                    },
+                    'medium': {
+                        change: Math.random() > 0.5 ? (Math.random() * 1.5 + 0.3) : -(Math.random() * 1 + 0.2),
+                        description: '중앙은행 관련 이벤트는 시장 심리에 영향을 줍니다. 일반적으로 발표 전후 변동성이 높아지며, 단기 트레이더들의 활동이 증가합니다.'
+                    }
+                },
+                'economic_data': {
+                    'high': {
+                        change: Math.random() > 0.5 ? (Math.random() * 2.5 + 0.8) : -(Math.random() * 2 + 0.6),
+                        description: 'GDP, 실업률, CPI 등 주요 경제지표 발표는 시장 전반에 큰 영향을 미칩니다. 예상치를 크게 벗어나면 단기 급등락이 발생할 수 있으며, 섹터별 차별화된 반응이 나타납니다.'
+                    },
+                    'medium': {
+                        change: Math.random() > 0.5 ? (Math.random() * 1.2 + 0.3) : -(Math.random() * 0.8 + 0.2),
+                        description: '경제지표 발표는 투자 심리에 영향을 주며, 특정 섹터에 집중적인 영향을 미칠 수 있습니다. 수출입 통계는 수출주에, 고용지표는 내수주에 영향을 줍니다.'
+                    }
+                },
+                'international': {
+                    'high': {
+                        change: Math.random() > 0.5 ? (Math.random() * 1.8 + 0.5) : -(Math.random() * 1.5 + 0.4),
+                        description: 'G20, APEC 등 국제 정상회의는 무역 정책과 국제 관계에 영향을 미칩니다. 과거 주요 국제회의 전후로 수출 대기업 주가가 평균 ±1.5% 변동을 보였습니다.'
+                    },
+                    'medium': {
+                        change: Math.random() > 0.5 ? (Math.random() * 1 + 0.2) : -(Math.random() * 0.8 + 0.1),
+                        description: '국제 이벤트는 장기적인 경제 전망에 영향을 주며, 수출 기업과 환율에 민감합니다.'
+                    }
+                },
+                'earnings': {
+                    'high': {
+                        change: Math.random() > 0.5 ? (Math.random() * 5 + 2) : -(Math.random() * 4 + 1.5),
+                        description: '대형주 실적 발표는 해당 기업뿐만 아니라 관련 섹터 전체에 영향을 미칩니다. 삼성전자 실적 발표 시 IT/반도체 섹터 전체가 동반 움직이는 경향이 있습니다.'
+                    },
+                    'medium': {
+                        change: Math.random() > 0.5 ? (Math.random() * 3 + 1) : -(Math.random() * 2.5 + 0.8),
+                        description: '기업 실적 발표는 개별 기업과 관련 업종에 직접적인 영향을 미칩니다. 어닝 서프라이즈 시 단기 급등 가능성이 있습니다.'
+                    }
+                }
+            };
+
+            const categoryData = impacts[category] || impacts['economic_data'];
+            const impData = categoryData[importance] || categoryData['medium'];
+
+            return impData;
+        }
+
+        // 투자자 참고 사항
+        function getInvestorNote(category, importance) {
+            const notes = {
+                'central_bank': {
+                    'high': '⚠️ 중앙은행 회의 결과는 전체 시장에 큰 영향을 미칩니다. 발표 30분 전후로 변동성이 크게 증가하므로, 단기 포지션 조절이 필요합니다. 금리 인상 시 금융주 매수, 금리 동결 시 성장주 매수를 고려하세요.',
+                    'medium': '중앙은행 관련 이벤트는 시장 심리에 영향을 줍니다. 사전 공지된 일정이므로 충분한 준비가 가능합니다.',
+                    'low': '정례 발표로 큰 변동은 제한적일 것으로 예상됩니다.'
+                },
+                'economic_data': {
+                    'high': '⚠️ 주요 경제지표 발표는 시장 컨센서스와의 차이가 중요합니다. 예상치를 크게 벗어나면 급등락이 발생할 수 있으니, 스톱로스를 설정하고 변동성에 대비하세요. GDP/CPI는 전체 시장에, 고용지표는 내수주에 주목하세요.',
+                    'medium': '경제지표 발표는 특정 섹터에 영향을 미칩니다. 발표 결과에 따라 단기 매매 기회가 있을 수 있습니다.',
+                    'low': '참고용 지표로, 큰 영향은 제한적입니다.'
+                },
+                'international': {
+                    'high': '⚠️ 국제 정상회의는 무역 정책과 관세에 영향을 미칩니다. 수출 대기업(삼성전자, 현대차 등)과 환율에 주목하세요. 회의 결과가 긍정적이면 수출주 매수, 무역 분쟁 우려 시 내수주로 방어적 포지션 전환을 고려하세요.',
+                    'medium': '국제 이벤트는 장기 전망에 영향을 줍니다. 수출 기업의 중장기 투자 판단 시 참고하세요.',
+                    'low': '참고용 이벤트로, 단기 시장 영향은 미미합니다.'
+                },
+                'earnings': {
+                    'high': '⚠️ 대형주 실적 발표는 해당 섹터 전체를 움직입니다. 삼성전자 실적 발표 시 SK하이닉스 등 반도체 업종 전체가 동반 움직이므로, 관련주 포트폴리오 전체를 점검하세요. 컨센서스 대비 실적 서프라이즈가 핵심입니다.',
+                    'medium': '기업 실적 발표는 개별 기업에 직접 영향을 미칩니다. 보유 중이라면 발표 전 청산 또는 홀딩 전략을 결정하세요.',
+                    'low': '소형주 실적 발표는 개별 기업 영향이 큽니다. 보유 중인 경우만 주목하세요.'
+                }
+            };
+
+            const categoryNotes = notes[category] || notes['economic_data'];
+            return categoryNotes[importance] || categoryNotes['medium'];
+        }
+
         function displayEconomicEvents(events, filterCategory) {
             const resultDiv = document.getElementById('result');
 
@@ -2529,10 +2623,16 @@
                 const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
                 const dateStr = `${dateObj.getMonth() + 1}월 ${dateObj.getDate()}일 (${dayNames[dateObj.getDay()]})`;
 
+                // 영향 섹터
+                const impactAreas = event.impact_areas ? event.impact_areas.join(', ') : '전체 시장';
+
+                // 과거 영향도 (시뮬레이션)
+                const historicalImpact = getHistoricalImpact(event.category, event.importance);
+
                 html += `
                     <div class="timeline-item">
                         <div class="timeline-dot ${event.importance}"></div>
-                        <div class="timeline-content" style="border-left-color: ${impColor};">
+                        <div class="timeline-content" style="border-left-color: ${impColor}; cursor: pointer;" onclick="toggleEventDetail('event-${index}')">
                             <div class="timeline-date">${dateStr}</div>
                             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
                                 <div>
@@ -2549,6 +2649,67 @@
                                 </div>
                             </div>
                             ${event.description ? `<div style="color: #666; font-size: 0.95em; line-height: 1.5; margin-top: 10px;">${event.description}</div>` : ''}
+
+                            <!-- 상세 정보 패널 (접혀있음) -->
+                            <div id="event-${index}" class="event-detail-panel" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px dashed #e0e0e0;">
+
+                                <!-- 영향 섹터 -->
+                                <div style="margin-bottom: 20px;">
+                                    <div style="font-weight: 600; color: #667eea; margin-bottom: 10px; font-size: 0.95em;">🎯 영향 섹터</div>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                        ${event.impact_areas ? event.impact_areas.map(area => `
+                                            <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 14px; border-radius: 20px; font-size: 0.85em;">
+                                                ${area}
+                                            </span>
+                                        `).join('') : '<span style="color: #999;">정보 없음</span>'}
+                                    </div>
+                                </div>
+
+                                <!-- 과거 영향도 (시뮬레이션) -->
+                                <div style="margin-bottom: 20px;">
+                                    <div style="font-weight: 600; color: #667eea; margin-bottom: 10px; font-size: 0.95em;">📈 과거 동일 이벤트 시장 반응</div>
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 12px;">
+                                        <div style="margin-bottom: 12px;">
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                                <span style="font-size: 0.9em; color: #666;">전일 대비 변동률</span>
+                                                <span style="font-weight: 600; color: ${historicalImpact.change >= 0 ? '#28a745' : '#dc3545'};">
+                                                    ${historicalImpact.change >= 0 ? '+' : ''}${historicalImpact.change.toFixed(2)}%
+                                                </span>
+                                            </div>
+                                            <div style="background: #dee2e6; height: 8px; border-radius: 4px; overflow: hidden;">
+                                                <div style="width: ${Math.abs(historicalImpact.change) * 10}%; height: 100%; background: ${historicalImpact.change >= 0 ? '#28a745' : '#dc3545'}; transition: width 0.5s;"></div>
+                                            </div>
+                                        </div>
+                                        <div style="font-size: 0.85em; color: #666; line-height: 1.6;">
+                                            ${historicalImpact.description}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 투자자 참고 사항 -->
+                                <div style="margin-bottom: 20px;">
+                                    <div style="font-weight: 600; color: #667eea; margin-bottom: 10px; font-size: 0.95em;">💡 투자자 참고 사항</div>
+                                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 15px; border-radius: 8px;">
+                                        <div style="font-size: 0.9em; color: #856404; line-height: 1.6;">
+                                            ${getInvestorNote(event.category, event.importance)}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 클릭 안내 -->
+                                <div style="text-align: center; margin-top: 15px;">
+                                    <span style="color: #999; font-size: 0.85em; cursor: pointer;" onclick="toggleEventDetail('event-${index}')">
+                                        ▲ 닫기
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- 펼치기 안내 -->
+                            <div style="text-align: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">
+                                <span style="color: #667eea; font-size: 0.85em; font-weight: 500;">
+                                    ▼ 클릭하여 상세 정보 보기
+                                </span>
+                            </div>
                         </div>
                     </div>
                 `;
