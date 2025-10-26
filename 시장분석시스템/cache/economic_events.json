@@ -1,0 +1,188 @@
+{
+  "timestamp": 1761490412.8537035,
+  "events": [
+    {
+      "date": "2025-11-01T00:00:00",
+      "name": "미국 고용지표 (NFP)",
+      "category": "economic_data",
+      "importance": "high",
+      "country": "US",
+      "description": "비농업 고용 인구 변화. 미국 경제 건강도의 핵심 지표",
+      "impact_areas": [
+        "달러화",
+        "S&P500",
+        "금리"
+      ],
+      "source": "economic_calendar"
+    },
+    {
+      "date": "2025-12-01T00:00:00",
+      "name": "미국 고용지표 (NFP)",
+      "category": "economic_data",
+      "importance": "high",
+      "country": "US",
+      "description": "비농업 고용 인구 변화. 미국 경제 건강도의 핵심 지표",
+      "impact_areas": [
+        "달러화",
+        "S&P500",
+        "금리"
+      ],
+      "source": "economic_calendar"
+    },
+    {
+      "date": "2025-11-13T00:00:00",
+      "name": "미국 소비자물가지수 (CPI)",
+      "category": "economic_data",
+      "importance": "high",
+      "country": "US",
+      "description": "인플레이션 측정. 연준 금리 결정에 큰 영향",
+      "impact_areas": [
+        "금리",
+        "채권",
+        "주식"
+      ],
+      "source": "economic_calendar"
+    },
+    {
+      "date": "2025-12-13T00:00:00",
+      "name": "미국 소비자물가지수 (CPI)",
+      "category": "economic_data",
+      "importance": "high",
+      "country": "US",
+      "description": "인플레이션 측정. 연준 금리 결정에 큰 영향",
+      "impact_areas": [
+        "금리",
+        "채권",
+        "주식"
+      ],
+      "source": "economic_calendar"
+    },
+    {
+      "date": "2025-10-28T00:00:00",
+      "name": "미국 GDP 성장률",
+      "category": "economic_data",
+      "importance": "high",
+      "country": "US",
+      "description": "경제 성장 속도 측정",
+      "impact_areas": [
+        "주식",
+        "달러화",
+        "경기민감주"
+      ],
+      "source": "economic_calendar"
+    },
+    {
+      "date": "2025-11-28T00:00:00",
+      "name": "미국 GDP 성장률",
+      "category": "economic_data",
+      "importance": "high",
+      "country": "US",
+      "description": "경제 성장 속도 측정",
+      "impact_areas": [
+        "주식",
+        "달러화",
+        "경기민감주"
+      ],
+      "source": "economic_calendar"
+    },
+    {
+      "date": "2025-12-28T00:00:00",
+      "name": "미국 GDP 성장률",
+      "category": "economic_data",
+      "importance": "high",
+      "country": "US",
+      "description": "경제 성장 속도 측정",
+      "impact_areas": [
+        "주식",
+        "달러화",
+        "경기민감주"
+      ],
+      "source": "economic_calendar"
+    },
+    {
+      "date": "2025-11-01T00:00:00",
+      "name": "한국 수출입 통계",
+      "category": "economic_data",
+      "importance": "medium",
+      "country": "KR",
+      "description": "한국 경제 건강도 지표",
+      "impact_areas": [
+        "코스피",
+        "수출주",
+        "조선/반도체"
+      ],
+      "source": "economic_calendar"
+    },
+    {
+      "date": "2025-12-01T00:00:00",
+      "name": "한국 수출입 통계",
+      "category": "economic_data",
+      "importance": "medium",
+      "country": "KR",
+      "description": "한국 경제 건강도 지표",
+      "impact_areas": [
+        "코스피",
+        "수출주",
+        "조선/반도체"
+      ],
+      "source": "economic_calendar"
+    },
+    {
+      "date": "2025-11-07",
+      "name": "FOMC 정례회의 (미국 연준)",
+      "category": "central_bank",
+      "importance": "high",
+      "country": "미국 연준",
+      "description": "미국 기준금리 결정. 글로벌 금융시장에 막대한 영향",
+      "impact_areas": [
+        "금리",
+        "달러화",
+        "글로벌 주식",
+        "채권"
+      ],
+      "source": "central_bank"
+    },
+    {
+      "date": "2025-11-14",
+      "name": "ECB 통화정책회의 (유럽중앙은행)",
+      "category": "central_bank",
+      "importance": "high",
+      "country": "유럽중앙은행",
+      "description": "유로존 금리 및 통화정책 결정",
+      "impact_areas": [
+        "유로화",
+        "유럽주식",
+        "유로채권"
+      ],
+      "source": "central_bank"
+    },
+    {
+      "date": "2025-11-21",
+      "name": "한국은행 금융통화위원회",
+      "category": "central_bank",
+      "importance": "medium",
+      "country": "Global",
+      "description": "한국 기준금리 결정",
+      "impact_areas": [
+        "코스피",
+        "원/달러",
+        "금리"
+      ],
+      "source": "central_bank"
+    },
+    {
+      "date": "2025-11-28",
+      "name": "BOJ 금융정책결정회의 (일본은행)",
+      "category": "central_bank",
+      "importance": "medium",
+      "country": "일본은행",
+      "description": "일본 통화정책 결정",
+      "impact_areas": [
+        "엔화",
+        "일본주식",
+        "아시아증시"
+      ],
+      "source": "central_bank"
+    }
+  ]
+}
