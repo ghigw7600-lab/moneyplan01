@@ -11,7 +11,7 @@ import os
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
 import json
 from datetime import datetime
 import threading
@@ -74,6 +74,13 @@ monitored_tickers = []
 def index():
     """메인 대시보드"""
     return render_template('index.html')
+
+
+@app.route('/static/manifest.json')
+def manifest():
+    """PWA Manifest 파일"""
+    return send_from_directory(os.path.join(app.root_path, '..', 'templates'), 'manifest.json')
+
 
 
 @app.route('/api/analyze', methods=['POST'])
