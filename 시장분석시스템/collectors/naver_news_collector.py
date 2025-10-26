@@ -1,33 +1,90 @@
 # -*- coding: utf-8 -*-
 """
 네이버 뉴스 수집 모듈 (클릭 가능한 링크 포함)
+Phase 4-2: 캐시 시스템 추가 (1시간 유효)
 """
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import time
 import re
+import json
+import os
+import hashlib
 
 
 class NaverNewsCollector:
-    """네이버 뉴스 수집기"""
+    """네이버 뉴스 수집기 (Phase 4-2: 캐시 지원)"""
 
     def __init__(self):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
 
-    def get_news(self, query, max_count=20):
+        # Phase 4-2: 캐시 설정
+        self.cache_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cache', 'news')
+        os.makedirs(self.cache_dir, exist_ok=True)
+        self.cache_validity = 3600  # 1시간 (3600초)
+
+    def _get_cache_key(self, query, max_count):
+        """캐시 키 생성"""
+        key_string = f"{query}_{max_count}"
+        return hashlib.md5(key_string.encode()).hexdigest()
+
+    def _load_cache(self, query, max_count):
+        """캐시에서 뉴스 로드"""
+        cache_key = self._get_cache_key(query, max_count)
+        cache_file = os.path.join(self.cache_dir, f"naver_{cache_key}.json")
+
+        if not os.path.exists(cache_file):
+            return None
+
+        try:
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                cache_data = json.load(f)
+
+            # 캐시 유효성 확인
+            cache_time = cache_data.get('timestamp', 0)
+            if time.time() - cache_time > self.cache_validity:
+                return None
+
+            return cache_data.get('news', [])
+        except:
+            return None
+
+    def _save_cache(self, query, max_count, news):
+        """캐시에 뉴스 저장"""
+        try:
+            cache_key = self._get_cache_key(query, max_count)
+            cache_file = os.path.join(self.cache_dir, f"naver_{cache_key}.json")
+
+            cache_data = {
+                'timestamp': time.time(),
+                'news': news
+            }
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(cache_data, f, ensure_ascii=False, indent=2)
+        except:
+            pass
+
+    def get_news(self, query, max_count=20, use_cache=True):
         """
-        네이버 뉴스 검색 및 수집
+        네이버 뉴스 검색 및 수집 (Phase 4-2: 캐시 지원)
 
         Args:
             query (str): 검색 키워드 (예: "삼성전자", "비트코인")
             max_count (int): 수집할 뉴스 개수
+            use_cache (bool): 캐시 사용 여부
 
         Returns:
             list: 뉴스 리스트 [{'title', 'description', 'url', 'date', 'source'}]
         """
+        # Phase 4-2: 캐시 확인
+        if use_cache:
+            cached_news = self._load_cache(query, max_count)
+            if cached_news is not None:
+                return cached_news
+
         news_list = []
 
         try:
@@ -106,6 +163,11 @@ class NaverNewsCollector:
                 time.sleep(0.5)
 
             print(f"✅ 네이버 뉴스 {len(news_list)}개 수집 완료")
+
+            # Phase 4-2: 캐시 저장
+            if use_cache:
+                self._save_cache(query, max_count, news_list)
+
             return news_list
 
         except Exception as e:

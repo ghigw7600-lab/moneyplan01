@@ -17,15 +17,23 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import time
+import json
+import os
 
 
 class EconomicEventCollector:
-    """경제 이벤트 수집기"""
+    """경제 이벤트 수집기 (Phase 4-1: 캐시 시스템 추가)"""
 
     def __init__(self):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
+
+        # Phase 4-1: 캐시 설정
+        self.cache_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cache')
+        os.makedirs(self.cache_dir, exist_ok=True)
+        self.cache_file = os.path.join(self.cache_dir, 'economic_events.json')
+        self.cache_validity = 86400  # 1일 (24시간 = 86400초)
 
         # 주요 이벤트 카테고리
         self.event_categories = {
@@ -43,16 +51,57 @@ class EconomicEventCollector:
             'low': 1        # 작은 영향
         }
 
-    def get_upcoming_events(self, days=30):
+    def _load_cache(self):
+        """캐시에서 데이터 로드"""
+        if not os.path.exists(self.cache_file):
+            return None
+
+        try:
+            with open(self.cache_file, 'r', encoding='utf-8') as f:
+                cache_data = json.load(f)
+
+            # 캐시 유효성 확인
+            cache_time = cache_data.get('timestamp', 0)
+            if time.time() - cache_time > self.cache_validity:
+                print("⏰ 캐시 만료 (1일 경과)")
+                return None
+
+            print("✅ 캐시 사용 중 (1일 이내)")
+            return cache_data.get('events', [])
+        except Exception as e:
+            print(f"⚠️ 캐시 로드 실패: {e}")
+            return None
+
+    def _save_cache(self, events):
+        """캐시에 데이터 저장"""
+        try:
+            cache_data = {
+                'timestamp': time.time(),
+                'events': events
+            }
+            with open(self.cache_file, 'w', encoding='utf-8') as f:
+                json.dump(cache_data, f, ensure_ascii=False, indent=2)
+            print("💾 캐시 저장 완료 (1일 유효)")
+        except Exception as e:
+            print(f"⚠️ 캐시 저장 실패: {e}")
+
+    def get_upcoming_events(self, days=30, use_cache=True):
         """
-        향후 N일간의 주요 경제 이벤트 조회
+        향후 N일간의 주요 경제 이벤트 조회 (Phase 4-1: 캐시 지원)
 
         Args:
             days (int): 조회 기간 (일)
+            use_cache (bool): 캐시 사용 여부
 
         Returns:
             list: 경제 이벤트 리스트
         """
+        # Phase 4-1: 캐시 확인
+        if use_cache:
+            cached_events = self._load_cache()
+            if cached_events is not None:
+                return cached_events
+
         print(f"\n{'='*60}")
         print(f"📅 향후 {days}일간의 경제 이벤트 수집 중...")
         print(f"{'='*60}\n")
@@ -64,6 +113,16 @@ class EconomicEventCollector:
 
         # 2. 주요 중앙은행 회의 일정
         events.extend(self._get_central_bank_meetings())
+
+        # Phase 4-1: 캐시 저장
+        if use_cache:
+            self._save_cache(events)
+
+        return events
+
+    def _collect_events_internal(self, days=30):
+        """내부 수집 로직 (캐시 없이)"""
+        events = []
 
         # 3. 국제 정상회의/포럼
         events.extend(self._get_international_summits())

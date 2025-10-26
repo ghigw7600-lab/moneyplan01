@@ -2,16 +2,20 @@
 """
 Google News RSS Collector
 네이버 뉴스 외에 Google News에서도 뉴스 수집
+Phase 4-2: 캐시 시스템 추가 (1시간 유효)
 """
 
 import requests
 import xml.etree.ElementTree as ET
 from datetime import datetime
 import time
+import json
+import os
+import hashlib
 
 
 class GoogleNewsCollector:
-    """Google News RSS 수집기"""
+    """Google News RSS 수집기 (Phase 4-2: 캐시 지원)"""
 
     def __init__(self):
         self.base_url = "https://news.google.com/rss/search"
@@ -19,18 +23,70 @@ class GoogleNewsCollector:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
 
-    def get_news(self, keyword, max_count=20, language='ko'):
+        # Phase 4-2: 캐시 설정
+        self.cache_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cache', 'news')
+        os.makedirs(self.cache_dir, exist_ok=True)
+        self.cache_validity = 3600  # 1시간
+
+    def _get_cache_key(self, keyword, max_count, language):
+        """캐시 키 생성"""
+        key_string = f"{keyword}_{max_count}_{language}"
+        return hashlib.md5(key_string.encode()).hexdigest()
+
+    def _load_cache(self, keyword, max_count, language):
+        """캐시에서 뉴스 로드"""
+        cache_key = self._get_cache_key(keyword, max_count, language)
+        cache_file = os.path.join(self.cache_dir, f"google_{cache_key}.json")
+
+        if not os.path.exists(cache_file):
+            return None
+
+        try:
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                cache_data = json.load(f)
+
+            cache_time = cache_data.get('timestamp', 0)
+            if time.time() - cache_time > self.cache_validity:
+                return None
+
+            return cache_data.get('news', [])
+        except:
+            return None
+
+    def _save_cache(self, keyword, max_count, language, news):
+        """캐시에 뉴스 저장"""
+        try:
+            cache_key = self._get_cache_key(keyword, max_count, language)
+            cache_file = os.path.join(self.cache_dir, f"google_{cache_key}.json")
+
+            cache_data = {
+                'timestamp': time.time(),
+                'news': news
+            }
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(cache_data, f, ensure_ascii=False, indent=2)
+        except:
+            pass
+
+    def get_news(self, keyword, max_count=20, language='ko', use_cache=True):
         """
-        Google News에서 키워드 검색
+        Google News에서 키워드 검색 (Phase 4-2: 캐시 지원)
 
         Args:
             keyword (str): 검색 키워드
             max_count (int): 최대 뉴스 개수
             language (str): 언어 ('ko' 또는 'en')
+            use_cache (bool): 캐시 사용 여부
 
         Returns:
             list: 뉴스 딕셔너리 리스트
         """
+        # Phase 4-2: 캐시 확인
+        if use_cache:
+            cached_news = self._load_cache(keyword, max_count, language)
+            if cached_news is not None:
+                return cached_news
+
         print(f"\n📰 Google News 검색: '{keyword}' (최대 {max_count}개)")
 
         try:
@@ -130,6 +186,11 @@ class GoogleNewsCollector:
                     continue
 
             print(f"✅ Google News {len(news_list)}개 수집 완료")
+
+            # Phase 4-2: 캐시 저장
+            if use_cache:
+                self._save_cache(keyword, max_count, language, news_list)
+
             return news_list
 
         except requests.exceptions.Timeout:
