@@ -1,2 +1,17 @@
 2025-10-25 00:13:29 | INFO     | logger.py:87 | 데이터 정규화 시작: orderly-network
 2025-10-25 00:17:09 | INFO     | logger.py:87 | 데이터 정규화 시작: 006400.KS
+2025-10-25 00:56:58 | INFO     | logger.py:87 | 데이터 정규화 시작: 034020.KS
+2025-10-25 00:57:11 | INFO     | logger.py:87 | 프리미엄 PDF 생성 시작: 두산에너빌리티
+2025-10-25 00:57:11 | ERROR    | logger.py:72 | 프리미엄 PDF 생성 실패
+2025-10-25 00:57:11 | ERROR    | logger.py:74 | Exception: TypeError: unsupported format string passed to dict.__format__
+2025-10-25 00:57:11 | ERROR    | logger.py:75 | Traceback (most recent call last):
+  File "C:\Users\기광우\OneDrive\Desktop\기광우 업무\AI\시장분석시스템\web\app.py", line 576, in download_premium_pdf
+    output_path = premium_pdf_generator.generate_report(reports_dir, data)
+  File "C:\Users\기광우\OneDrive\Desktop\기광우 업무\AI\시장분석시스템\reports\premium_pdf_generator.py", line 176, in generate_report
+    story.extend(self._create_phase3_analysis(analysis_data))
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\기광우\OneDrive\Desktop\기광우 업무\AI\시장분석시스템\reports\premium_pdf_generator.py", line 453, in _create_phase3_analysis
+    vol_text = f"현재 거래량: {volume.get('current_volume', 0):,.0f}<br/>" \
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to dict.__format__
+
