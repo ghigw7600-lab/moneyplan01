@@ -693,6 +693,91 @@
                 padding: 16px 12px;
                 min-height: 56px;
             }
+
+            /* Phase 3-2: 반응형 디자인 강화 */
+
+            /* 관심종목 카드 최적화 */
+            .watchlist-item {
+                padding: 16px !important;
+                margin-bottom: 12px !important;
+            }
+
+            /* 스파크라인 차트 크기 조정 */
+            canvas[id^="sparkline-"] {
+                width: 100% !important;
+                height: 60px !important;
+            }
+
+            /* 분석 결과 카드 간격 */
+            .result {
+                padding: 16px;
+                margin-bottom: 12px;
+            }
+
+            /* 접을 수 있는 섹션 헤더 */
+            .collapsible-header {
+                padding: 12px 16px;
+                font-size: 0.95em;
+            }
+
+            /* 상세 정보 아이템 */
+            .detail-item {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+
+            .detail-title {
+                font-size: clamp(0.9em, 3.5vw, 1em);
+                margin-bottom: 8px;
+            }
+
+            .detail-description {
+                font-size: clamp(0.85em, 3vw, 0.95em);
+                line-height: 1.6;
+            }
+
+            /* 정보 그리드 */
+            .info-item {
+                padding: 12px;
+            }
+
+            .info-label {
+                font-size: clamp(0.8em, 2.5vw, 0.9em);
+            }
+
+            .info-value {
+                font-size: clamp(0.9em, 3vw, 1em);
+            }
+
+            /* 핫 종목 카드 */
+            .hot-stock-item {
+                padding: 14px;
+                margin-bottom: 12px;
+            }
+
+            /* 경제 이벤트 필터 */
+            .event-filters {
+                gap: 8px;
+            }
+
+            .event-filters select,
+            .event-filters button {
+                min-height: 44px;
+                font-size: 0.95em;
+            }
+
+            /* 백테스팅 차트 */
+            .performance-item {
+                padding: 14px;
+                margin-bottom: 10px;
+            }
+
+            /* 새로고침 알림 */
+            #refreshNotification {
+                font-size: 0.9em;
+                padding: 12px 16px;
+                max-width: 90%;
+            }
         }
 
         /* Phase 3-3: 경제 이벤트 타임라인 스타일 */
@@ -3326,7 +3411,7 @@
             }, 300);
         }
 
-        // Sparkline 차트 그리기 (Phase 2-2)
+        // Sparkline 차트 그리기 (Phase 2-2, Phase 3-2: 반응형 개선)
         function drawSparkline(ticker, data, isPositive) {
             const canvasId = `sparkline-${ticker.replace('.', '-')}`;
             const canvas = document.getElementById(canvasId);
@@ -3335,10 +3420,18 @@
 
             const ctx = canvas.getContext('2d');
             const width = canvas.offsetWidth;
-            const height = 50;
 
-            canvas.width = width;
-            canvas.height = height;
+            // Phase 3-2: 모바일에서 차트 높이 증가
+            const isMobile = window.innerWidth <= 968;
+            const height = isMobile ? 60 : 50;
+
+            // 고해상도 디스플레이 지원
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.scale(dpr, dpr);
 
             const max = Math.max(...data);
             const min = Math.min(...data);
@@ -3349,7 +3442,7 @@
             // 선 그리기
             ctx.beginPath();
             ctx.strokeStyle = isPositive ? '#28a745' : '#dc3545';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = isMobile ? 2.5 : 2; // 모바일에서 두껍게
 
             data.forEach((value, index) => {
                 const x = index * stepX;
