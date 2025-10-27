@@ -2895,15 +2895,18 @@
             try {
                 // 현재 활성 탭에 따라 적절한 데이터 새로고침
                 if (tabText.includes('핫 종목')) {
-                    // 핫 종목 스캔 (자동)
-                    const response = await fetch('/api/hot-stocks/scan', { method: 'POST' });
+                    // ✅ 최적화: 캐시된 데이터 사용 (GET) - 서버 부하 최소화
+                    // ⚠️ POST /scan은 2,759개 종목 전체 스캔 (5-10분 소요)이므로 자동 새로고침에서는 사용 안 함
+                    // 💡 사용자가 수동으로 "핫 종목 탭" 클릭 시에만 캐시된 데이터 표시
+
+                    const response = await fetch('/api/hot-stocks');  // GET: 캐시 사용 (0.1초)
                     const result = await response.json();
 
-                    // 결과 표시 (간단한 알림)
-                    showRefreshNotification(`핫 종목 업데이트: ${result.total || 0}개 발견`);
+                    // 결과 표시
+                    showRefreshNotification(`핫 종목 업데이트: ${result.count || 0}개 (캐시)`);
 
                 } else if (tabText.includes('경제 이벤트')) {
-                    // 경제 이벤트 새로고침
+                    // 경제 이벤트 새로고침 (캐시 1일 유효)
                     await loadEconomicEvents();
                     showRefreshNotification('경제 이벤트 업데이트 완료');
 
