@@ -845,46 +845,67 @@ def get_watchlist_prices():
             return jsonify({'error': '최대 10개까지만 조회 가능합니다'}), 400
 
         result = {}
+        from datetime import datetime
 
         for ticker in tickers:
             try:
-                # Yahoo Finance에서 가격 데이터 가져오기
-                import yfinance as yf
-                stock = yf.Ticker(ticker)
+                # 한국 주식은 FinanceDataReader 사용
+                if ticker.endswith('.KS') or ticker.endswith('.KQ'):
+                    import FinanceDataReader as fdr
+                    from datetime import timedelta
 
-                # 최근 20일 데이터 (Sparkline용)
-                hist = stock.history(period='1mo')
+                    # 최근 1개월 데이터
+                    end_date = datetime.now()
+                    start_date = end_date - timedelta(days=30)
 
-                if hist.empty:
-                    result[ticker] = {
-                        'error': '데이터 없음',
-                        'current_price': 0,
-                        'change_percent': 0,
-                        'sparkline': [],
-                        'last_update': '정보 없음'
-                    }
-                    continue
+                    # 티커에서 .KS/.KQ 제거
+                    code = ticker.replace('.KS', '').replace('.KQ', '')
+                    hist = fdr.DataReader(code, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
 
-                # 현재 가격 및 변동률
-                current_price = float(hist['Close'].iloc[-1])
-                prev_price = float(hist['Close'].iloc[-2]) if len(hist) > 1 else current_price
-                change_percent = ((current_price - prev_price) / prev_price) * 100 if prev_price > 0 else 0
+                    if hist is None or hist.empty:
+                        result[ticker] = {
+                            'error': '데이터 없음',
+                            'current_price': 0,
+                            'change_percent': 0,
+                            'sparkline': [],
+                            'last_update': '정보 없음'
+                        }
+                        continue
 
-                # Sparkline 데이터 (최근 20개 종가)
-                sparkline = hist['Close'].tail(20).tolist()
+                    # 현재 가격 및 변동률
+                    current_price = float(hist['Close'].iloc[-1])
+                    prev_price = float(hist['Close'].iloc[-2]) if len(hist) > 1 else current_price
+                    change_percent = ((current_price - prev_price) / prev_price) * 100 if prev_price > 0 else 0
+
+                    # Sparkline 데이터 (최근 20개 종가)
+                    sparkline = hist['Close'].tail(20).tolist()
+
+                else:
+                    # 암호화폐 및 기타는 yfinance 사용
+                    import yfinance as yf
+                    stock = yf.Ticker(ticker)
+                    hist = stock.history(period='1mo')
+
+                    if hist.empty:
+                        result[ticker] = {
+                            'error': '데이터 없음',
+                            'current_price': 0,
+                            'change_percent': 0,
+                            'sparkline': [],
+                            'last_update': '정보 없음'
+                        }
+                        continue
+
+                    # 현재 가격 및 변동률
+                    current_price = float(hist['Close'].iloc[-1])
+                    prev_price = float(hist['Close'].iloc[-2]) if len(hist) > 1 else current_price
+                    change_percent = ((current_price - prev_price) / prev_price) * 100 if prev_price > 0 else 0
+
+                    # Sparkline 데이터 (최근 20개 종가)
+                    sparkline = hist['Close'].tail(20).tolist()
 
                 # 마지막 업데이트 시간
-                from datetime import datetime, timedelta
-                now = datetime.now()
-                last_update_time = now - timedelta(minutes=5)  # 5분 전으로 가정
-                time_diff = (now - last_update_time).seconds // 60
-
-                if time_diff < 60:
-                    last_update = f"{time_diff}분 전"
-                elif time_diff < 1440:
-                    last_update = f"{time_diff // 60}시간 전"
-                else:
-                    last_update = f"{time_diff // 1440}일 전"
+                last_update = "방금 전"
 
                 result[ticker] = {
                     'current_price': round(current_price, 2),
@@ -894,6 +915,9 @@ def get_watchlist_prices():
                 }
 
             except Exception as e:
+                import traceback
+                print(f"❌ {ticker} 가격 조회 실패: {str(e)}")
+                print(traceback.format_exc())
                 result[ticker] = {
                     'error': str(e),
                     'current_price': 0,
