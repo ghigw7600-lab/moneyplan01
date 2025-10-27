@@ -3120,11 +3120,11 @@
 
                 html += `
                     <div class="search-result-item" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div onclick="selectStockFromSearch('${ticker}', '${stock.name}', 'watchlist')">
+                        <div style="flex: 1;">
                             <strong>${stock.name}</strong>
                             <span style="color: #999; font-size: 0.9em; margin-left: 8px;">${stock.code}</span>
                         </div>
-                        <button onclick="addToWatchlist('${ticker}', '${stock.name}')"
+                        <button onclick="addToWatchlist('${ticker}', '${stock.name}'); event.stopPropagation();"
                                 ${buttonDisabled}
                                 style="padding: 4px 12px; border: none; border-radius: 6px; color: white; font-size: 0.85em; ${buttonStyle}">
                             ${buttonText}
