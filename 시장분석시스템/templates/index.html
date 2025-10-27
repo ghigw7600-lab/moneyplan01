@@ -728,8 +728,24 @@
 
     <div class="container">
         <header>
-            <h1>🚀 AI 시장 분석 시스템</h1>
-            <p class="subtitle">실시간 주식/가상화폐 분석 · 전문 지표 상세 설명 · PDF 다운로드</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div>
+                    <h1>🚀 AI 시장 분석 시스템</h1>
+                    <p class="subtitle">실시간 주식/가상화폐 분석 · 전문 지표 상세 설명 · PDF 다운로드</p>
+                </div>
+                <div style="text-align: right;">
+                    <button id="auto-refresh-toggle"
+                            onclick="toggleAutoRefresh()"
+                            style="padding: 12px 24px; font-size: 0.95em; border: none; border-radius: 10px; cursor: pointer; color: white; background: linear-gradient(135deg, #28a745 0%, #218838 100%); box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.3s; font-weight: 600;">
+                        ▶️ 자동 새로고침 시작
+                    </button>
+                    <div id="auto-refresh-status" style="display: none; margin-top: 10px; padding: 8px 16px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; font-size: 0.9em;">
+                        <span style="color: #667eea; font-weight: 600;">⏱️ 다음 업데이트: </span>
+                        <span id="refresh-countdown" style="color: #667eea; font-weight: 700; font-size: 1.1em;">30</span>
+                        <span style="color: #667eea;">초 후</span>
+                    </div>
+                </div>
+            </div>
         </header>
 
         <div class="main-content">
@@ -2804,6 +2820,168 @@
 
             resultDiv.innerHTML = html;
         }
+
+        // ========================================
+        // 자동 새로고침 시스템 (Phase 1-3)
+        // ========================================
+
+        let autoRefreshInterval = null;
+        let isAutoRefreshEnabled = false;
+        let refreshCountdown = 30;
+
+        // 자동 새로고침 토글 함수
+        function toggleAutoRefresh() {
+            isAutoRefreshEnabled = !isAutoRefreshEnabled;
+            const statusDiv = document.getElementById('auto-refresh-status');
+            const toggleBtn = document.getElementById('auto-refresh-toggle');
+
+            if (isAutoRefreshEnabled) {
+                // 자동 새로고침 활성화
+                toggleBtn.textContent = '🔴 자동 새로고침 중지';
+                toggleBtn.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+                statusDiv.style.display = 'block';
+
+                refreshCountdown = 30;
+                startAutoRefresh();
+            } else {
+                // 자동 새로고침 비활성화
+                toggleBtn.textContent = '▶️ 자동 새로고침 시작';
+                toggleBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #218838 100%)';
+                statusDiv.style.display = 'none';
+
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+            }
+        }
+
+        // 자동 새로고침 시작
+        function startAutoRefresh() {
+            // 기존 인터벌 정리
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+
+            // 1초마다 카운트다운
+            autoRefreshInterval = setInterval(() => {
+                refreshCountdown--;
+                updateCountdownDisplay();
+
+                if (refreshCountdown <= 0) {
+                    // 새로고침 실행
+                    performAutoRefresh();
+                    refreshCountdown = 30; // 30초로 리셋
+                }
+            }, 1000);
+        }
+
+        // 카운트다운 디스플레이 업데이트
+        function updateCountdownDisplay() {
+            const countdownSpan = document.getElementById('refresh-countdown');
+            if (countdownSpan) {
+                countdownSpan.textContent = refreshCountdown;
+            }
+        }
+
+        // 실제 새로고침 수행
+        async function performAutoRefresh() {
+            const currentTab = document.querySelector('.tab-btn.active');
+
+            if (!currentTab) return;
+
+            const tabText = currentTab.textContent.trim();
+
+            try {
+                // 현재 활성 탭에 따라 적절한 데이터 새로고침
+                if (tabText.includes('핫 종목')) {
+                    // 핫 종목 스캔 (자동)
+                    const response = await fetch('/api/hot-stocks/scan', { method: 'POST' });
+                    const result = await response.json();
+
+                    // 결과 표시 (간단한 알림)
+                    showRefreshNotification(`핫 종목 업데이트: ${result.total || 0}개 발견`);
+
+                } else if (tabText.includes('경제 이벤트')) {
+                    // 경제 이벤트 새로고침
+                    await loadEconomicEvents();
+                    showRefreshNotification('경제 이벤트 업데이트 완료');
+
+                } else if (tabText.includes('백테스팅')) {
+                    // 백테스팅 결과 새로고침
+                    await loadBacktestResults();
+                    showRefreshNotification('백테스팅 결과 업데이트 완료');
+                }
+
+            } catch (error) {
+                console.error('자동 새로고침 오류:', error);
+            }
+        }
+
+        // 새로고침 알림 표시
+        function showRefreshNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+                font-size: 0.95em;
+            `;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span>✅</span>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            // 3초 후 자동 제거
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // CSS 애니메이션 추가 (동적)
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 페이지 언로드 시 인터벌 정리
+        window.addEventListener('beforeunload', () => {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        });
     </script>
 </body>
 </html>

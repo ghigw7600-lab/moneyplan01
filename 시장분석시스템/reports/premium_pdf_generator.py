@@ -450,9 +450,23 @@ class PremiumPDFGenerator:
             elements.append(Paragraph("4.4 거래량 분석", self.subsection_title))
 
             surge = volume.get('surge_analysis', {})
-            vol_text = f"현재 거래량: {volume.get('current_volume', 0):,.0f}<br/>" \
-                       f"20일 평균: {volume.get('avg_volume_20', 0):,.0f}<br/>" \
-                       f"비율: {volume.get('volume_ratio', 0):.1f}배<br/>" \
+
+            # 안전하게 숫자 값 가져오기
+            current_vol = volume.get('current_volume', 0)
+            avg_vol = volume.get('avg_volume_20', 0)
+            vol_ratio = volume.get('volume_ratio', 0)
+
+            # dict인 경우 처리
+            if isinstance(current_vol, dict):
+                current_vol = 0
+            if isinstance(avg_vol, dict):
+                avg_vol = 0
+            if isinstance(vol_ratio, dict):
+                vol_ratio = 0
+
+            vol_text = f"현재 거래량: {current_vol:,.0f}<br/>" \
+                       f"20일 평균: {avg_vol:,.0f}<br/>" \
+                       f"비율: {vol_ratio:.1f}배<br/>" \
                        f"상태: {surge.get('type', 'N/A')}"
             elements.append(Paragraph(vol_text, self.body_text))
 
