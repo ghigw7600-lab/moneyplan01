@@ -1,47 +1,26 @@
-appdirs==1.4.4
-beautifulsoup4==4.14.2
-blinker==1.9.0
-certifi==2025.10.5
-cffi==2.0.0
-charset-normalizer==3.4.3
-click==8.3.0
-colorama==0.4.6
-curl_cffi==0.13.0
-defusedxml==0.7.1
-finance-datareader==0.9.96
+# 머니플랜01 - Python Dependencies
+# Phase 4: Cloud Deployment
+
+# Web Framework
 Flask==3.1.2
-frozendict==2.4.6
-html5lib==1.1
-idna==3.10
-itsdangerous==2.2.0
-Jinja2==3.1.6
-lxml==6.0.2
-MarkupSafe==3.0.3
-multitasking==0.0.12
-narwhals==2.7.0
-numpy==2.3.3
-packaging==25.0
+gunicorn==21.2.0
+
+# Data Analysis
 pandas==2.3.3
-peewee==3.18.2
-pillow==12.0.0
-platformdirs==4.5.0
-plotly==6.3.1
-protobuf==6.32.1
-pycparser==2.23
-python-dateutil==2.9.0.post0
-pytz==2025.2
-reportlab==4.4.4
-requests==2.32.5
-requests-file==2.1.0
-six==1.17.0
-soupsieve==2.8
-tqdm==4.67.1
-typing_extensions==4.15.0
-tzdata==2025.2
-urllib3==2.5.0
-webencodings==0.5.1
-websockets==15.0.1
-Werkzeug==3.1.3
+numpy>=1.24.0
+
+# Stock Data
 yfinance==0.2.38
-youtube-transcript-api==1.2.3
-gunicorn==23.0.0
+finance-datareader==0.9.96
+
+# Web Scraping
+beautifulsoup4==4.14.2
+requests==2.32.5
+lxml>=4.9.0
+
+# Image Processing (for PWA icons)
+pillow==12.0.0
+
+# Additional Dependencies
+python-dateutil>=2.8.2
+pytz>=2023.3

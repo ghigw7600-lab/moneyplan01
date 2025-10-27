@@ -1,12 +1,19 @@
 # Render.com 배포 설정
+# Phase 4: Cloud Deployment
+
 services:
   - type: web
     name: moneyplan01
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT web.app:app
+    region: singapore
+    plan: free
+    branch: main
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn --chdir web --bind 0.0.0.0:$PORT app:app --workers 2 --threads 4 --timeout 120"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11
+        value: 3.11.0
       - key: PORT
-        value: 10000
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
