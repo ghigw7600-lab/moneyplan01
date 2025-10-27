@@ -203,6 +203,10 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             width: 100%;
+            /* Phase 3-1: 터치 최적화 */
+            min-height: 48px; /* 최소 터치 영역 */
+            -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+            touch-action: manipulation; /* 더블탭 줌 방지 */
         }
 
         button:hover {
@@ -212,6 +216,7 @@
 
         button:active {
             transform: translateY(0);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
         }
 
         .tabs {
@@ -228,6 +233,14 @@
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s;
+            /* Phase 3-1: 터치 최적화 */
+            min-height: 48px;
+            min-width: 80px;
+            -webkit-tap-highlight-color: rgba(102, 126, 234, 0.2);
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .tab.active {
@@ -580,6 +593,64 @@
                 grid-template-columns: 1fr;
             }
 
+            /* Phase 3-1: 모바일 터치 최적화 */
+            body {
+                padding: 10px;
+            }
+
+            header {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: clamp(1.5em, 5vw, 2.5em);
+            }
+
+            .subtitle {
+                font-size: clamp(0.9em, 3vw, 1.1em);
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            /* 버튼 터치 영역 확대 */
+            button {
+                padding: 16px 24px;
+                font-size: clamp(1em, 4vw, 1.1em);
+                min-height: 52px;
+            }
+
+            /* 입력 필드 터치 최적화 */
+            input, select {
+                min-height: 48px;
+                font-size: 16px; /* iOS 자동 줌 방지 */
+            }
+
+            /* 탭 스크롤 가능하게 (Phase 3-2) */
+            .tabs {
+                overflow-x: auto;
+                overflow-y: hidden;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none; /* Firefox */
+                -ms-overflow-style: none; /* IE/Edge */
+                gap: 8px;
+                padding-bottom: 5px;
+            }
+
+            .tabs::-webkit-scrollbar {
+                display: none; /* Chrome/Safari */
+            }
+
+            .tab {
+                font-size: 0.9em;
+                padding: 12px 16px;
+                white-space: nowrap;
+                flex-shrink: 0;
+                min-height: 48px;
+            }
+
             /* Phase 3-4: 모바일 타임라인 최적화 */
             .timeline::before {
                 left: 20px;
@@ -617,14 +688,10 @@
                 align-items: center;
             }
 
-            /* 탭 버튼 모바일 최적화 */
-            .tabs {
-                flex-wrap: wrap;
-            }
-
-            .tab {
-                font-size: 0.85em;
-                padding: 8px 12px;
+            /* 검색 결과 터치 최적화 */
+            .search-item {
+                padding: 16px 12px;
+                min-height: 56px;
             }
         }
 
@@ -3496,6 +3563,91 @@
                 // 자동 요청은 하지 않고, 목표가 설정 시에만 요청
             }
         });
+
+        // ============================================================
+        // Phase 3-1: 풀 투 리프레시 (Pull-to-Refresh)
+        // ============================================================
+        let pullToRefresh = {
+            startY: 0,
+            pulling: false,
+            refreshing: false,
+            threshold: 80 // 새로고침 트리거 거리 (px)
+        };
+
+        // 터치 시작
+        document.addEventListener('touchstart', (e) => {
+            // 스크롤이 최상단일 때만 활성화
+            if (window.scrollY === 0) {
+                pullToRefresh.startY = e.touches[0].clientY;
+                pullToRefresh.pulling = true;
+            }
+        }, { passive: true });
+
+        // 터치 이동
+        document.addEventListener('touchmove', (e) => {
+            if (!pullToRefresh.pulling || pullToRefresh.refreshing) return;
+
+            const currentY = e.touches[0].clientY;
+            const pullDistance = currentY - pullToRefresh.startY;
+
+            // 아래로 당기는 경우만
+            if (pullDistance > 0) {
+                // 스크롤이 최상단인지 다시 확인
+                if (window.scrollY === 0) {
+                    // 새로고침 표시기 업데이트 (있다면)
+                    if (pullDistance > pullToRefresh.threshold) {
+                        document.body.style.overscrollBehaviorY = 'contain';
+                    }
+                }
+            }
+        }, { passive: true });
+
+        // 터치 종료
+        document.addEventListener('touchend', async (e) => {
+            if (!pullToRefresh.pulling || pullToRefresh.refreshing) {
+                pullToRefresh.pulling = false;
+                return;
+            }
+
+            const pullDistance = (e.changedTouches[0].clientY || pullToRefresh.startY) - pullToRefresh.startY;
+
+            // 임계값을 넘으면 새로고침
+            if (pullDistance > pullToRefresh.threshold && window.scrollY === 0) {
+                pullToRefresh.refreshing = true;
+
+                // 새로고침 알림 표시
+                showRefreshNotification('🔄 새로고침 중...');
+
+                // 현재 탭에 따라 새로고침
+                try {
+                    if (currentTab === 'watchlist') {
+                        await loadWatchlist();
+                    } else if (currentTab === 'hot') {
+                        await loadHotStocks();
+                    } else if (currentTab === 'events') {
+                        await loadEconomicEvents();
+                    } else if (currentTab === 'backtest') {
+                        await loadBacktestPerformance();
+                    }
+
+                    showRefreshNotification('✅ 새로고침 완료!');
+                } catch (error) {
+                    console.error('새로고침 오류:', error);
+                    showRefreshNotification('❌ 새로고침 실패');
+                }
+
+                // 500ms 후 상태 초기화
+                setTimeout(() => {
+                    pullToRefresh.refreshing = false;
+                    pullToRefresh.pulling = false;
+                    document.body.style.overscrollBehaviorY = 'auto';
+                }, 500);
+            } else {
+                pullToRefresh.pulling = false;
+                document.body.style.overscrollBehaviorY = 'auto';
+            }
+        }, { passive: true });
+
     </script>
 </body>
 </html>
