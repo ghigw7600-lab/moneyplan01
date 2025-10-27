@@ -3650,11 +3650,68 @@
             }
         }
 
-        // 페이지 로드 시 알림 권한 요청
-        window.addEventListener('load', () => {
-            if ('Notification' in window && Notification.permission === 'default') {
-                // 자동 요청은 하지 않고, 목표가 설정 시에만 요청
-            }
+        // ============================================================
+        // Phase 3-3: Service Worker 등록 (PWA 지원)
+        // ============================================================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/service-worker.js')
+                    .then((registration) => {
+                        console.log('✅ Service Worker 등록 완료:', registration.scope);
+
+                        // 푸시 알림 권한 확인
+                        if ('Notification' in window) {
+                            if (Notification.permission === 'granted') {
+                                console.log('✅ 알림 권한: 허용됨');
+                            } else if (Notification.permission === 'default') {
+                                console.log('💬 알림 권한: 대기 중 (목표가 설정 시 요청)');
+                            } else {
+                                console.log('❌ 알림 권한: 거부됨');
+                            }
+                        }
+
+                        // Service Worker 업데이트 감지
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('🔄 새로운 Service Worker 발견, 업데이트 중...');
+
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // 새 버전 사용 가능
+                                    if (confirm('새로운 버전이 있습니다. 지금 업데이트하시겠어요?')) {
+                                        newWorker.postMessage({ action: 'skipWaiting' });
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('❌ Service Worker 등록 실패:', error);
+                    });
+
+                // Service Worker 컨트롤러 변경 감지
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('🔄 Service Worker 업데이트 완료');
+                    window.location.reload();
+                });
+            });
+        } else {
+            console.warn('⚠️ 이 브라우저는 Service Worker를 지원하지 않습니다');
+        }
+
+        // PWA 설치 프롬프트
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('💾 PWA 설치 가능!');
+        });
+
+        // PWA 설치 완료
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ PWA 설치 완료!');
+            deferredPrompt = null;
         });
 
         // ============================================================

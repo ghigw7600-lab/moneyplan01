@@ -1,0 +1,79 @@
+{
+  "name": "머니플랜01 - AI 투자 분석 시스템",
+  "short_name": "머니플랜01",
+  "description": "실시간 주식 분석, 목표가 알림, 경제 이벤트 캘린더를 제공하는 AI 기반 투자 의사결정 지원 시스템",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#667eea",
+  "theme_color": "#667eea",
+  "lang": "ko-KR",
+  "dir": "ltr",
+  "categories": ["finance", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/screenshot-1.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "label": "관심종목 실시간 차트"
+    },
+    {
+      "src": "/static/screenshot-2.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "label": "AI 종목 분석 결과"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "관심종목",
+      "short_name": "관심종목",
+      "description": "내 관심종목 바로 보기",
+      "url": "/?tab=watchlist",
+      "icons": [
+        {
+          "src": "/static/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "핫 종목",
+      "short_name": "핫 종목",
+      "description": "오늘의 핫 종목 추천",
+      "url": "/?tab=hot",
+      "icons": [
+        {
+          "src": "/static/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "prefer_related_applications": false
+}
