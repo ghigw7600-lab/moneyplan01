@@ -3094,47 +3094,49 @@
                 return;
             }
 
-            const watchlist = getWatchlist();
+            try {
+                const watchlist = getWatchlist();
 
-            // 기존 검색 함수 재사용
-            const krxList = await fetch('/api/krx-list').then(r => r.json());
-            const filtered = krxList.filter(stock =>
-                stock.name.includes(query) ||
-                stock.code.includes(query)
-            ).slice(0, 10);
+                // 기존 검색 API 사용
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=stock`);
+                const data = await response.json();
 
-            if (filtered.length === 0) {
-                resultsDiv.style.display = 'none';
-                return;
-            }
+                if (!data.results || data.results.length === 0) {
+                    resultsDiv.style.display = 'none';
+                    return;
+                }
 
-            let html = '';
-            filtered.forEach(stock => {
-                const ticker = stock.code + '.KS';
-                const isInWatchlist = watchlist.some(w => w.ticker === ticker);
-                const buttonText = isInWatchlist ? '✅ 추가됨' : '⭐ 추가';
-                const buttonDisabled = isInWatchlist ? 'disabled' : '';
-                const buttonStyle = isInWatchlist ?
-                    'background: #28a745; opacity: 0.6; cursor: not-allowed;' :
-                    'background: #667eea; cursor: pointer;';
+                let html = '';
+                data.results.forEach(stock => {
+                    const isInWatchlist = watchlist.some(w => w.ticker === stock.ticker);
+                    const buttonText = isInWatchlist ? '✅ 추가됨' : '⭐ 추가';
+                    const buttonDisabled = isInWatchlist ? 'disabled' : '';
+                    const buttonStyle = isInWatchlist ?
+                        'background: #28a745; opacity: 0.6; cursor: not-allowed;' :
+                        'background: #667eea; cursor: pointer;';
 
-                html += `
-                    <div class="search-result-item" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="flex: 1;">
-                            <strong>${stock.name}</strong>
-                            <span style="color: #999; font-size: 0.9em; margin-left: 8px;">${stock.code}</span>
+                    html += `
+                        <div class="search-result-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f0f0f0;">
+                            <div style="flex: 1;">
+                                <strong>${stock.name}</strong>
+                                <span style="color: #999; font-size: 0.9em; margin-left: 8px;">${stock.ticker}</span>
+                            </div>
+                            <button onclick="addToWatchlist('${stock.ticker}', '${stock.name}'); event.stopPropagation();"
+                                    ${buttonDisabled}
+                                    style="padding: 6px 14px; border: none; border-radius: 6px; color: white; font-size: 0.85em; ${buttonStyle} font-weight: 600;">
+                                ${buttonText}
+                            </button>
                         </div>
-                        <button onclick="addToWatchlist('${ticker}', '${stock.name}'); event.stopPropagation();"
-                                ${buttonDisabled}
-                                style="padding: 4px 12px; border: none; border-radius: 6px; color: white; font-size: 0.85em; ${buttonStyle}">
-                            ${buttonText}
-                        </button>
-                    </div>
-                `;
-            });
+                    `;
+                });
 
-            resultsDiv.innerHTML = html;
-            resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = html;
+                resultsDiv.style.display = 'block';
+
+            } catch (error) {
+                console.error('관심종목 검색 오류:', error);
+                resultsDiv.style.display = 'none';
+            }
         }
 
         // 관심종목 목록 로드
