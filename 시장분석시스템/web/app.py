@@ -831,6 +831,87 @@ def get_backtest_performance():
         return jsonify({'error': str(e), 'traceback': error_trace}), 500
 
 
+@app.route('/api/watchlist/prices', methods=['GET'])
+def get_watchlist_prices():
+    """관심종목 가격 정보 조회 (Phase 2-1)"""
+    try:
+        tickers_str = request.args.get('tickers', '')
+        if not tickers_str:
+            return jsonify({'error': '티커가 제공되지 않았습니다'}), 400
+
+        tickers = [t.strip() for t in tickers_str.split(',')]
+
+        if len(tickers) > 10:
+            return jsonify({'error': '최대 10개까지만 조회 가능합니다'}), 400
+
+        result = {}
+
+        for ticker in tickers:
+            try:
+                # Yahoo Finance에서 가격 데이터 가져오기
+                import yfinance as yf
+                stock = yf.Ticker(ticker)
+
+                # 최근 20일 데이터 (Sparkline용)
+                hist = stock.history(period='1mo')
+
+                if hist.empty:
+                    result[ticker] = {
+                        'error': '데이터 없음',
+                        'current_price': 0,
+                        'change_percent': 0,
+                        'sparkline': [],
+                        'last_update': '정보 없음'
+                    }
+                    continue
+
+                # 현재 가격 및 변동률
+                current_price = float(hist['Close'].iloc[-1])
+                prev_price = float(hist['Close'].iloc[-2]) if len(hist) > 1 else current_price
+                change_percent = ((current_price - prev_price) / prev_price) * 100 if prev_price > 0 else 0
+
+                # Sparkline 데이터 (최근 20개 종가)
+                sparkline = hist['Close'].tail(20).tolist()
+
+                # 마지막 업데이트 시간
+                from datetime import datetime, timedelta
+                now = datetime.now()
+                last_update_time = now - timedelta(minutes=5)  # 5분 전으로 가정
+                time_diff = (now - last_update_time).seconds // 60
+
+                if time_diff < 60:
+                    last_update = f"{time_diff}분 전"
+                elif time_diff < 1440:
+                    last_update = f"{time_diff // 60}시간 전"
+                else:
+                    last_update = f"{time_diff // 1440}일 전"
+
+                result[ticker] = {
+                    'current_price': round(current_price, 2),
+                    'change_percent': round(change_percent, 2),
+                    'sparkline': sparkline,
+                    'last_update': last_update
+                }
+
+            except Exception as e:
+                result[ticker] = {
+                    'error': str(e),
+                    'current_price': 0,
+                    'change_percent': 0,
+                    'sparkline': [],
+                    'last_update': '오류'
+                }
+
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ 관심종목 가격 조회 에러:")
+        print(error_trace)
+        return jsonify({'error': str(e), 'traceback': error_trace}), 500
+
+
 def monitoring_loop():
     """백그라운드 모니터링 루프"""
     import time

@@ -758,6 +758,7 @@
                     <button class="tab" onclick="switchTab('crypto')">가상화폐</button>
                     <button class="tab" onclick="showCommodities()">원자재</button>
                     <button class="tab" onclick="showHotStocks()">🔥 핫 종목</button>
+                    <button class="tab" onclick="switchTab('watchlist')">📌 관심종목</button>
                     <button class="tab" onclick="switchTab('events')">📅 경제 이벤트</button>
                     <button class="tab" onclick="switchTab('backtest')">📊 백테스팅</button>
                 </div>
@@ -839,6 +840,32 @@
                         <strong>📌 백테스팅이란?</strong><br>
                         과거 데이터로 AI 추천의 정확도를 검증합니다.<br>
                         실시간 추천 성과를 추적하여 시스템 신뢰도를 측정합니다.
+                    </div>
+                </div>
+
+                <!-- 관심종목 탭 (Phase 2-1) -->
+                <div id="watchlist-tab" class="tab-content">
+                    <div class="input-group">
+                        <label>종목 검색</label>
+                        <div class="search-container">
+                            <input type="text" id="watchlist-search" placeholder="삼성전자, AAPL 등 검색..." oninput="searchStockForWatchlist(this.value)" autocomplete="off" />
+                            <div id="watchlist-search-results" class="search-results"></div>
+                        </div>
+                    </div>
+                    <button onclick="loadWatchlist()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        🔄 새로고침
+                    </button>
+                    <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px; border-left: 4px solid #667eea;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <strong style="color: #667eea; font-size: 1.1em;">📌 내 관심종목</strong>
+                            <span id="watchlist-count" style="color: #999; font-size: 0.9em;">0/10</span>
+                        </div>
+                        <div id="watchlist-items" style="margin-top: 15px;">
+                            <div style="text-align: center; padding: 40px 20px; color: #999;">
+                                관심종목이 없습니다.<br>
+                                <span style="font-size: 0.9em;">위 검색창에서 종목을 검색하고 ⭐ 버튼을 클릭하세요.</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2905,6 +2932,12 @@
                     // 결과 표시
                     showRefreshNotification(`핫 종목 업데이트: ${result.count || 0}개 (캐시)`);
 
+                } else if (tabText.includes('관심종목')) {
+                    // 관심종목 새로고침 (Phase 2-1)
+                    await loadWatchlist();
+                    const watchlist = getWatchlist();
+                    showRefreshNotification(`관심종목 업데이트: ${watchlist.length}개`);
+
                 } else if (tabText.includes('경제 이벤트')) {
                     // 경제 이벤트 새로고침 (캐시 1일 유효)
                     await loadEconomicEvents();
@@ -2985,6 +3018,280 @@
                 clearInterval(autoRefreshInterval);
             }
         });
+
+        // ========================================
+        // 관심종목 관리 시스템 (Phase 2-1)
+        // ========================================
+
+        const MAX_WATCHLIST = 10;
+
+        // LocalStorage에서 관심종목 가져오기
+        function getWatchlist() {
+            const watchlist = localStorage.getItem('watchlist');
+            return watchlist ? JSON.parse(watchlist) : [];
+        }
+
+        // LocalStorage에 관심종목 저장
+        function saveWatchlist(watchlist) {
+            localStorage.setItem('watchlist', JSON.stringify(watchlist));
+        }
+
+        // 관심종목 추가
+        function addToWatchlist(ticker, name) {
+            const watchlist = getWatchlist();
+
+            // 중복 체크
+            if (watchlist.some(item => item.ticker === ticker)) {
+                showRefreshNotification(`⚠️ 이미 관심종목에 추가되어 있습니다: ${name}`);
+                return false;
+            }
+
+            // 최대 개수 체크
+            if (watchlist.length >= MAX_WATCHLIST) {
+                showRefreshNotification(`⚠️ 최대 ${MAX_WATCHLIST}개까지만 추가할 수 있습니다`);
+                return false;
+            }
+
+            // 추가
+            watchlist.push({
+                ticker: ticker,
+                name: name,
+                addedAt: new Date().toISOString()
+            });
+
+            saveWatchlist(watchlist);
+            showRefreshNotification(`✅ 관심종목에 추가되었습니다: ${name}`);
+
+            // 관심종목 탭이 활성화되어 있으면 새로고침
+            if (document.getElementById('watchlist-tab').classList.contains('active')) {
+                loadWatchlist();
+            }
+
+            return true;
+        }
+
+        // 관심종목 삭제
+        function removeFromWatchlist(ticker) {
+            let watchlist = getWatchlist();
+            const item = watchlist.find(w => w.ticker === ticker);
+
+            watchlist = watchlist.filter(item => item.ticker !== ticker);
+            saveWatchlist(watchlist);
+
+            if (item) {
+                showRefreshNotification(`🗑️ 관심종목에서 삭제되었습니다: ${item.name}`);
+            }
+
+            loadWatchlist();
+        }
+
+        // 관심종목용 종목 검색
+        async function searchStockForWatchlist(query) {
+            const resultsDiv = document.getElementById('watchlist-search-results');
+
+            if (query.length < 2) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            const watchlist = getWatchlist();
+
+            // 기존 검색 함수 재사용
+            const krxList = await fetch('/api/krx-list').then(r => r.json());
+            const filtered = krxList.filter(stock =>
+                stock.name.includes(query) ||
+                stock.code.includes(query)
+            ).slice(0, 10);
+
+            if (filtered.length === 0) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(stock => {
+                const ticker = stock.code + '.KS';
+                const isInWatchlist = watchlist.some(w => w.ticker === ticker);
+                const buttonText = isInWatchlist ? '✅ 추가됨' : '⭐ 추가';
+                const buttonDisabled = isInWatchlist ? 'disabled' : '';
+                const buttonStyle = isInWatchlist ?
+                    'background: #28a745; opacity: 0.6; cursor: not-allowed;' :
+                    'background: #667eea; cursor: pointer;';
+
+                html += `
+                    <div class="search-result-item" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div onclick="selectStockFromSearch('${ticker}', '${stock.name}', 'watchlist')">
+                            <strong>${stock.name}</strong>
+                            <span style="color: #999; font-size: 0.9em; margin-left: 8px;">${stock.code}</span>
+                        </div>
+                        <button onclick="addToWatchlist('${ticker}', '${stock.name}')"
+                                ${buttonDisabled}
+                                style="padding: 4px 12px; border: none; border-radius: 6px; color: white; font-size: 0.85em; ${buttonStyle}">
+                            ${buttonText}
+                        </button>
+                    </div>
+                `;
+            });
+
+            resultsDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+
+        // 관심종목 목록 로드
+        async function loadWatchlist() {
+            const watchlist = getWatchlist();
+            const countSpan = document.getElementById('watchlist-count');
+            const itemsDiv = document.getElementById('watchlist-items');
+
+            countSpan.textContent = `${watchlist.length}/${MAX_WATCHLIST}`;
+
+            if (watchlist.length === 0) {
+                itemsDiv.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #999;">
+                        관심종목이 없습니다.<br>
+                        <span style="font-size: 0.9em;">위 검색창에서 종목을 검색하고 ⭐ 버튼을 클릭하세요.</span>
+                    </div>
+                `;
+                return;
+            }
+
+            // 가격 정보 가져오기
+            itemsDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;"><div class="spinner"></div><p>로딩 중...</p></div>';
+
+            try {
+                const tickers = watchlist.map(w => w.ticker).join(',');
+                const response = await fetch(`/api/watchlist/prices?tickers=${tickers}`);
+                const pricesData = await response.json();
+
+                let html = '';
+                watchlist.forEach(item => {
+                    const priceInfo = pricesData[item.ticker] || {};
+                    const currentPrice = priceInfo.current_price || 0;
+                    const changePercent = priceInfo.change_percent || 0;
+                    const lastUpdate = priceInfo.last_update || '정보 없음';
+                    const sparklineData = priceInfo.sparkline || [];
+
+                    const priceColor = changePercent >= 0 ? '#28a745' : '#dc3545';
+                    const priceIcon = changePercent >= 0 ? '📈' : '📉';
+
+                    html += `
+                        <div style="background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid ${priceColor};">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div>
+                                    <strong style="font-size: 1.1em; color: #333;">${item.name}</strong>
+                                    <span style="color: #999; font-size: 0.85em; margin-left: 8px;">${item.ticker}</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 1.2em; font-weight: 700; color: ${priceColor};">
+                                        ${priceIcon} ${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sparkline 차트 영역 -->
+                            <div style="margin: 10px 0;">
+                                <canvas id="sparkline-${item.ticker.replace('.', '-')}" height="50"></canvas>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;">
+                                <div style="color: #666; font-size: 0.9em;">
+                                    <strong style="font-size: 1.1em; color: #333;">${currentPrice.toLocaleString()}원</strong>
+                                    <span style="margin-left: 10px; color: #999; font-size: 0.85em;">${lastUpdate}</span>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button onclick="analyzeFromWatchlist('${item.ticker}', '${item.name}')"
+                                            style="padding: 6px 14px; border: none; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; font-size: 0.85em;">
+                                        📊 분석
+                                    </button>
+                                    <button onclick="removeFromWatchlist('${item.ticker}')"
+                                            style="padding: 6px 14px; border: none; border-radius: 6px; background: #dc3545; color: white; cursor: pointer; font-size: 0.85em;">
+                                        🗑️ 삭제
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                itemsDiv.innerHTML = html;
+
+                // Sparkline 차트 그리기
+                watchlist.forEach(item => {
+                    const priceInfo = pricesData[item.ticker] || {};
+                    const sparklineData = priceInfo.sparkline || [];
+                    if (sparklineData.length > 0) {
+                        drawSparkline(item.ticker, sparklineData, priceInfo.change_percent >= 0);
+                    }
+                });
+
+            } catch (error) {
+                itemsDiv.innerHTML = `<div style="text-align: center; padding: 40px; color: #dc3545;">오류: ${error.message}</div>`;
+            }
+        }
+
+        // 관심종목에서 분석하기
+        function analyzeFromWatchlist(ticker, name) {
+            // 주식 탭으로 전환
+            switchTab('stock');
+
+            // 티커 입력
+            document.getElementById('stock-ticker').value = ticker;
+
+            // 자동 분석 실행
+            setTimeout(() => {
+                analyzeStock();
+            }, 300);
+        }
+
+        // Sparkline 차트 그리기 (Phase 2-2)
+        function drawSparkline(ticker, data, isPositive) {
+            const canvasId = `sparkline-${ticker.replace('.', '-')}`;
+            const canvas = document.getElementById(canvasId);
+
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const width = canvas.offsetWidth;
+            const height = 50;
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const max = Math.max(...data);
+            const min = Math.min(...data);
+            const range = max - min || 1;
+
+            const stepX = width / (data.length - 1 || 1);
+
+            // 선 그리기
+            ctx.beginPath();
+            ctx.strokeStyle = isPositive ? '#28a745' : '#dc3545';
+            ctx.lineWidth = 2;
+
+            data.forEach((value, index) => {
+                const x = index * stepX;
+                const y = height - ((value - min) / range) * height;
+
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+
+            ctx.stroke();
+
+            // 영역 채우기 (그라데이션)
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            gradient.addColorStop(0, isPositive ? 'rgba(40, 167, 69, 0.3)' : 'rgba(220, 53, 69, 0.3)');
+            gradient.addColorStop(1, isPositive ? 'rgba(40, 167, 69, 0.05)' : 'rgba(220, 53, 69, 0.05)');
+
+            ctx.fillStyle = gradient;
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+            ctx.fill();
+        }
     </script>
 </body>
 </html>
