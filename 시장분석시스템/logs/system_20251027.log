@@ -54,3 +54,4 @@ TypeError: unsupported format string passed to dict.__format__
 2025-10-27 12:44:19 | INFO     | logger.py:87 | 데이터 정규화 시작: dogecoin
 2025-10-27 12:44:22 | INFO     | logger.py:87 | 데이터 정규화 시작: dogecoin
 2025-10-27 13:06:53 | INFO     | logger.py:87 | 데이터 정규화 시작: ripple
+2025-10-27 13:51:38 | INFO     | logger.py:87 | 데이터 정규화 시작: 005930.KS

@@ -3165,6 +3165,9 @@
                 const response = await fetch(`/api/watchlist/prices?tickers=${tickers}`);
                 const pricesData = await response.json();
 
+                // 목표가 달성 체크 (Phase 2-3)
+                checkTargetPrices(pricesData);
+
                 let html = '';
                 watchlist.forEach(item => {
                     const priceInfo = pricesData[item.ticker] || {};
@@ -3195,12 +3198,20 @@
                                 <canvas id="sparkline-${item.ticker.replace('.', '-')}" height="50"></canvas>
                             </div>
 
+                            <!-- 목표가 설정 (Phase 2-3) -->
+                            <div id="target-price-${item.ticker.replace('.', '-')}" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;">
+                            </div>
+
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;">
                                 <div style="color: #666; font-size: 0.9em;">
                                     <strong style="font-size: 1.1em; color: #333;">${currentPrice.toLocaleString()}원</strong>
                                     <span style="margin-left: 10px; color: #999; font-size: 0.85em;">${lastUpdate}</span>
                                 </div>
                                 <div style="display: flex; gap: 8px;">
+                                    <button onclick="setTargetPrice('${item.ticker}', '${item.name}', ${currentPrice})"
+                                            style="padding: 6px 14px; border: none; border-radius: 6px; background: #ffc107; color: #333; cursor: pointer; font-size: 0.85em; font-weight: 600;">
+                                        🔔 목표가
+                                    </button>
                                     <button onclick="analyzeFromWatchlist('${item.ticker}', '${item.name}')"
                                             style="padding: 6px 14px; border: none; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; font-size: 0.85em;">
                                         📊 분석
@@ -3224,6 +3235,9 @@
                     if (sparklineData.length > 0) {
                         drawSparkline(item.ticker, sparklineData, priceInfo.change_percent >= 0);
                     }
+
+                    // 목표가 표시 (Phase 2-3)
+                    displayTargetPrice(item.ticker, priceInfo.current_price);
                 });
 
             } catch (error) {
@@ -3294,6 +3308,194 @@
             ctx.closePath();
             ctx.fill();
         }
+
+        // ========================================
+        // 목표가 알림 시스템 (Phase 2-3)
+        // ========================================
+
+        // 목표가 가져오기
+        function getTargetPrices() {
+            const targetPrices = localStorage.getItem('targetPrices');
+            return targetPrices ? JSON.parse(targetPrices) : {};
+        }
+
+        // 목표가 저장
+        function saveTargetPrices(targetPrices) {
+            localStorage.setItem('targetPrices', JSON.stringify(targetPrices));
+        }
+
+        // 목표가 설정 다이얼로그
+        function setTargetPrice(ticker, name, currentPrice) {
+            const targetPrices = getTargetPrices();
+            const existingTarget = targetPrices[ticker];
+
+            const currentTargetText = existingTarget ? `(현재: ${existingTarget.toLocaleString()}원)` : '';
+            const suggestedPrice = Math.round(currentPrice * 1.05); // 5% 상승 기본값
+
+            const targetPrice = prompt(
+                `${name}\n목표가를 입력하세요 ${currentTargetText}\n\n현재가: ${currentPrice.toLocaleString()}원\n권장: ${suggestedPrice.toLocaleString()}원 (5% 상승)`,
+                existingTarget || suggestedPrice
+            );
+
+            if (targetPrice === null) return; // 취소
+
+            const numericTarget = parseFloat(targetPrice.replace(/,/g, ''));
+
+            if (isNaN(numericTarget) || numericTarget <= 0) {
+                alert('올바른 가격을 입력하세요');
+                return;
+            }
+
+            // 알림 권한 요청
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        showRefreshNotification('✅ 알림 권한이 허용되었습니다');
+                    }
+                });
+            }
+
+            // 목표가 저장
+            targetPrices[ticker] = numericTarget;
+            saveTargetPrices(targetPrices);
+
+            showRefreshNotification(`🔔 ${name} 목표가 ${numericTarget.toLocaleString()}원으로 설정됨`);
+
+            // 목표가 표시 업데이트
+            displayTargetPrice(ticker, currentPrice);
+        }
+
+        // 목표가 표시
+        function displayTargetPrice(ticker, currentPrice) {
+            const targetPrices = getTargetPrices();
+            const targetPrice = targetPrices[ticker];
+            const containerDiv = document.getElementById(`target-price-${ticker.replace('.', '-')}`);
+
+            if (!containerDiv) return;
+
+            if (!targetPrice) {
+                containerDiv.innerHTML = '';
+                return;
+            }
+
+            const diff = targetPrice - currentPrice;
+            const diffPercent = ((diff / currentPrice) * 100).toFixed(2);
+            const isAbove = diff > 0;
+            const statusIcon = isAbove ? '⬆️' : (diff < 0 ? '⬇️' : '✅');
+            const statusColor = isAbove ? '#667eea' : (diff < 0 ? '#dc3545' : '#28a745');
+            const statusText = isAbove ? `+${diffPercent}%` : (diff < 0 ? `${diffPercent}%` : '도달!');
+
+            containerDiv.innerHTML = `
+                <div style="background: ${isAbove ? 'rgba(102, 126, 234, 0.1)' : (diff < 0 ? 'rgba(220, 53, 69, 0.1)' : 'rgba(40, 167, 69, 0.1)')}; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">🎯 목표가</div>
+                        <div style="font-size: 1.1em; font-weight: 700; color: ${statusColor};">
+                            ${targetPrice.toLocaleString()}원
+                            <span style="font-size: 0.9em; margin-left: 8px;">${statusIcon} ${statusText}</span>
+                        </div>
+                    </div>
+                    <button onclick="removeTargetPrice('${ticker}')" style="padding: 4px 10px; border: none; border-radius: 6px; background: #dc3545; color: white; cursor: pointer; font-size: 0.8em;">
+                        ❌ 삭제
+                    </button>
+                </div>
+            `;
+        }
+
+        // 목표가 삭제
+        function removeTargetPrice(ticker) {
+            const targetPrices = getTargetPrices();
+            delete targetPrices[ticker];
+            saveTargetPrices(targetPrices);
+
+            showRefreshNotification('🗑️ 목표가가 삭제되었습니다');
+
+            // 표시 제거
+            const containerDiv = document.getElementById(`target-price-${ticker.replace('.', '-')}`);
+            if (containerDiv) {
+                containerDiv.innerHTML = '';
+            }
+        }
+
+        // 목표가 달성 체크 (자동 새로고침에 통합)
+        function checkTargetPrices(pricesData) {
+            const targetPrices = getTargetPrices();
+            const notifiedKey = 'notifiedTargets';
+            const notified = JSON.parse(localStorage.getItem(notifiedKey) || '{}');
+
+            Object.keys(targetPrices).forEach(ticker => {
+                const targetPrice = targetPrices[ticker];
+                const priceInfo = pricesData[ticker];
+
+                if (!priceInfo) return;
+
+                const currentPrice = priceInfo.current_price;
+                const notifiedPrice = notified[ticker];
+
+                // 목표가 도달 체크 (상승/하락 모두)
+                const isReached = (targetPrice >= currentPrice * 0.995 && targetPrice <= currentPrice * 1.005);
+
+                if (isReached && notifiedPrice !== targetPrice) {
+                    // 알림 발송
+                    const watchlist = getWatchlist();
+                    const item = watchlist.find(w => w.ticker === ticker);
+                    const name = item ? item.name : ticker;
+
+                    sendTargetPriceNotification(name, ticker, currentPrice, targetPrice);
+
+                    // 알림 기록 (중복 방지)
+                    notified[ticker] = targetPrice;
+                    localStorage.setItem(notifiedKey, JSON.stringify(notified));
+                }
+            });
+        }
+
+        // 목표가 달성 알림 발송
+        function sendTargetPriceNotification(name, ticker, currentPrice, targetPrice) {
+            const message = `${name}이(가) 목표가 ${targetPrice.toLocaleString()}원에 도달했습니다!\n현재가: ${currentPrice.toLocaleString()}원`;
+
+            // 화면 알림
+            showRefreshNotification(`🎯 ${message}`);
+
+            // 브라우저 알림
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    new Notification('🎯 목표가 도달!', {
+                        body: message,
+                        icon: '/static/icon-192.png',
+                        badge: '/static/icon-192.png',
+                        tag: ticker,
+                        requireInteraction: true
+                    });
+                } catch (e) {
+                    console.error('알림 오류:', e);
+                }
+            }
+
+            // 소리 알림 (선택, 간단한 beep)
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.frequency.value = 800; // 주파수
+                gainNode.gain.value = 0.3; // 볼륨
+
+                oscillator.start();
+                setTimeout(() => oscillator.stop(), 200); // 0.2초
+            } catch (e) {
+                console.error('소리 재생 오류:', e);
+            }
+        }
+
+        // 페이지 로드 시 알림 권한 요청
+        window.addEventListener('load', () => {
+            if ('Notification' in window && Notification.permission === 'default') {
+                // 자동 요청은 하지 않고, 목표가 설정 시에만 요청
+            }
+        });
     </script>
 </body>
 </html>
