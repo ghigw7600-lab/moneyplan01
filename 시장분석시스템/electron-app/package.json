@@ -1,0 +1,35 @@
+{
+  "name": "moneyplan01-desktop",
+  "version": "1.0.0",
+  "description": "머니플랜01 - AI 투자 분석 시스템 (데스크톱 앱)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win --x64"
+  },
+  "keywords": ["투자", "주식", "AI", "분석"],
+  "author": "기광우",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.moneyplan01.desktop",
+    "productName": "머니플랜01",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

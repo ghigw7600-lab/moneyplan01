@@ -3827,17 +3827,18 @@
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                             window.navigator.standalone === true;
 
+        // 페이지 로드 시 배너 자동 표시 (beforeinstallprompt 이벤트 없이도)
+        if (!isStandalone && !bannerDismissed) {
+            setTimeout(() => {
+                installBanner.classList.add('show');
+                console.log('📱 앱 설치 배너 표시!');
+            }, 3000); // 3초 후 배너 표시
+        }
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             console.log('💾 PWA 설치 가능!');
-
-            // 이미 앱으로 실행 중이거나 배너를 닫았으면 표시 안 함
-            if (!isStandalone && !bannerDismissed) {
-                setTimeout(() => {
-                    installBanner.classList.add('show');
-                }, 3000); // 3초 후 배너 표시
-            }
         });
 
         // 설치 버튼 클릭
