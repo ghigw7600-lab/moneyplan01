@@ -478,6 +478,104 @@
             font-size: 0.9em;
         }
 
+        /* ===================================================== */
+        /* 모바일 앱 설치 안내 배너 스타일 (Phase 5) */
+        /* ===================================================== */
+        #install-app-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 20px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            display: none;
+        }
+
+        #install-app-banner.show {
+            display: block;
+            transform: translateY(0);
+        }
+
+        .install-banner-content {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .install-banner-text {
+            flex: 1;
+        }
+
+        .install-banner-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .install-banner-subtitle {
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .install-banner-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .install-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95em;
+        }
+
+        .install-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        }
+
+        .install-btn.secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .install-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 600px) {
+            .install-banner-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+
+            .install-banner-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .install-btn {
+                flex: 1;
+                padding: 12px 16px;
+            }
+        }
+
         /* 핫 종목 스타일 - 원자재와 동일한 모달 구조 사용 */
         .hot-stock-card {
             background: white;
@@ -874,6 +972,22 @@
                 <div style="text-align: center; padding: 40px; color: #999;">
                     로딩 중...
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- 모바일 앱 설치 안내 배너 (Phase 5) -->
+    <!-- ===================================================== -->
+    <div id="install-app-banner">
+        <div class="install-banner-content">
+            <div class="install-banner-text">
+                <div class="install-banner-title">📱 앱으로 설치하기</div>
+                <div class="install-banner-subtitle">홈 화면에 추가하면 더 빠르고 편리하게!</div>
+            </div>
+            <div class="install-banner-buttons">
+                <button class="install-btn" id="install-btn-yes">설치</button>
+                <button class="install-btn secondary" id="install-btn-no">나중에</button>
             </div>
         </div>
     </div>
@@ -3700,19 +3814,92 @@
             console.warn('⚠️ 이 브라우저는 Service Worker를 지원하지 않습니다');
         }
 
-        // PWA 설치 프롬프트
+        // ============================================================
+        // Phase 5: PWA 설치 프롬프트 및 배너
+        // ============================================================
         let deferredPrompt;
+        const installBanner = document.getElementById('install-app-banner');
+        const installBtnYes = document.getElementById('install-btn-yes');
+        const installBtnNo = document.getElementById('install-btn-no');
+
+        // 배너 표시 여부 확인 (localStorage)
+        const bannerDismissed = localStorage.getItem('installBannerDismissed');
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                            window.navigator.standalone === true;
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             console.log('💾 PWA 설치 가능!');
+
+            // 이미 앱으로 실행 중이거나 배너를 닫았으면 표시 안 함
+            if (!isStandalone && !bannerDismissed) {
+                setTimeout(() => {
+                    installBanner.classList.add('show');
+                }, 3000); // 3초 후 배너 표시
+            }
+        });
+
+        // 설치 버튼 클릭
+        installBtnYes.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                showInstallGuide();
+                return;
+            }
+
+            installBanner.classList.remove('show');
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`사용자 선택: ${outcome}`);
+
+            if (outcome === 'accepted') {
+                console.log('✅ PWA 설치 승인');
+            } else {
+                console.log('❌ PWA 설치 거부');
+            }
+
+            deferredPrompt = null;
+        });
+
+        // 나중에 버튼 클릭
+        installBtnNo.addEventListener('click', () => {
+            installBanner.classList.remove('show');
+            localStorage.setItem('installBannerDismissed', 'true');
+            console.log('📝 설치 배너 숨김');
         });
 
         // PWA 설치 완료
         window.addEventListener('appinstalled', () => {
             console.log('✅ PWA 설치 완료!');
+            installBanner.classList.remove('show');
             deferredPrompt = null;
+            alert('🎉 머니플랜01 앱 설치 완료!\n\n홈 화면에서 앱을 확인하세요.');
         });
+
+        // iOS Safari 설치 가이드 표시
+        function showInstallGuide() {
+            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+
+            if (isIOS) {
+                alert('📱 iOS 설치 방법:\n\n' +
+                      '1. 화면 하단 공유 버튼 (□↑) 터치\n' +
+                      '2. "홈 화면에 추가" 선택\n' +
+                      '3. "추가" 버튼 터치\n\n' +
+                      '홈 화면에 머니플랜01 아이콘이 생깁니다!');
+            } else if (isAndroid) {
+                alert('📱 Android 설치 방법:\n\n' +
+                      '1. 우측 상단 메뉴 (⋮) 터치\n' +
+                      '2. "홈 화면에 추가" 또는 "앱 설치" 선택\n' +
+                      '3. "추가" 버튼 터치\n\n' +
+                      '홈 화면에 머니플랜01 아이콘이 생깁니다!');
+            } else {
+                alert('💻 PC에서 설치:\n\n' +
+                      'Chrome: 주소창 우측 설치 아이콘 클릭\n' +
+                      'Edge: 주소창 우측 앱 아이콘 클릭');
+            }
+            installBanner.classList.remove('show');
+        }
 
         // ============================================================
         // Phase 3-1: 풀 투 리프레시 (Pull-to-Refresh)
