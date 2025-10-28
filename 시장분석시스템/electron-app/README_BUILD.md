@@ -150,6 +150,52 @@ pyinstaller --onefile --hidden-import yfinance app.py
 
 ## 🐛 트러블슈팅
 
+### ⚠️ 문제 0: 빌드 실패 - "Cannot create symbolic link" (가장 중요!)
+
+**에러 메시지**:
+```
+ERROR: Cannot create symbolic link : 클라이언트가 필요한 권한을 가지고 있지 않습니다
+winCodeSign\darwin\10.12\lib\libcrypto.dylib
+```
+
+**원인**: Windows 심볼릭 링크 생성 권한 부족
+
+**해결 방법 (택 1)**:
+
+#### 방법 A: Windows 개발자 모드 활성화 (권장 ⭐)
+
+**Windows 11**:
+1. `설정` → `개인 정보 보호 및 보안` → `개발자용`
+2. **개발자 모드** 토글 ON
+3. PC 재부팅
+4. `npm run build-win` 다시 실행
+
+**Windows 10**:
+1. `설정` → `업데이트 및 보안` → `개발자용`
+2. **개발자 모드** 선택
+3. PC 재부팅
+4. `npm run build-win` 다시 실행
+
+#### 방법 B: 관리자 권한으로 실행
+
+1. PowerShell을 **관리자 권한**으로 실행
+2. 다음 명령어:
+```powershell
+cd "C:\Users\기광우\OneDrive\Desktop\기광우 업무\AI\시장분석시스템\electron-app"
+npm run build-win
+```
+
+#### 방법 C: 캐시 삭제 후 재시도
+
+```bash
+rd /s /q "%LOCALAPPDATA%\electron-builder\Cache\winCodeSign"
+npm run build-win
+```
+
+**상세 가이드**: `빌드_이슈_해결가이드.md` 참고
+
+---
+
 ### 문제 1: "npm이 인식되지 않습니다"
 
 **해결**: Node.js 재설치 후 터미널 재시작

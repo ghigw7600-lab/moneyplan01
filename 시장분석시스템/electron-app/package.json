@@ -22,8 +22,9 @@
       "output": "dist"
     },
     "win": {
-      "target": "nsis",
-      "icon": "icon.ico"
+      "target": "portable",
+      "icon": "icon.ico",
+      "sign": false
     },
     "nsis": {
       "oneClick": false,
