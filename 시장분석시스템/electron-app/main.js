@@ -9,9 +9,16 @@ let pythonProcess;
 function startPythonServer() {
     const pythonScript = path.join(__dirname, '..', 'web', 'app.py');
 
+    // Windows에서 python 경로 찾기
+    const pythonCmd = process.platform === 'win32' ?
+        'C:\\Users\\기광우\\AppData\\Local\\Programs\\Python\\Python313\\python.exe' :
+        'python3';
+
     console.log('🐍 Python 서버 시작 중...');
-    pythonProcess = spawn('python', [pythonScript], {
-        cwd: path.join(__dirname, '..', 'web')
+    console.log(`Python 경로: ${pythonCmd}`);
+    pythonProcess = spawn(pythonCmd, [pythonScript], {
+        cwd: path.join(__dirname, '..', 'web'),
+        shell: true
     });
 
     pythonProcess.stdout.on('data', (data) => {

@@ -23,14 +23,8 @@
     },
     "win": {
       "target": "portable",
-      "icon": "icon.ico",
-      "sign": false
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "sign": null,
+      "signingHashAlgorithms": []
     }
   }
 }
